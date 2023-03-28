@@ -1,0 +1,18 @@
+# project local secrets
+secrets.py
+rules/
+
+# byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# c extensions
+*.so
+
+# distribution / packaging / cache
+.Python
+build/
+dist/
+cache/
+*.wav

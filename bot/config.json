@@ -1,0 +1,40 @@
+{
+    "runtime": {
+        "version": "0.6.10",
+        "log": {
+            "session_interval": 60.0,
+            "entry_truncation": 128.0
+        }
+    },
+    "bot": {
+        "command_prefix": "!",
+        "presense": {
+            "type": "listening",
+            "detail": "whispererererer.."
+        }
+    },
+    "gpt": {
+        "default_model": "gpt-3.5-turbo-0301",
+        "thinking_indicator": "小G捏造事实中...",
+        "contextual": {
+            "in_memory_timeframe": 600.0,
+            "max_entry_per_user": 12
+        }
+    },
+    "tts": {
+        "region": "eastus",
+        "neural": {
+            "culture": "zh_CN",
+            "speaker": "Xiaoyi"
+        },
+        "reintroduce_interval": 30.0,
+        "routine_interval": 30.0,
+        "nlp": {
+            "cache": "cache/speech.wav",
+            "truncation": 256,
+            "external_rules": [
+                "rules/user_alias"
+            ]
+        }
+    }
+}
