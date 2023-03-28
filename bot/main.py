@@ -1,12 +1,12 @@
 import datetime
 import os
 
-import shared
 import discord
 #import modules.tts.tts as tts
 from discord.ext import commands
+from util.config import load_config
 from util.logger import setup_logger
-from util.config import load_config, get_config
+import shared
 
 ### bot instance
 intents = discord.Intents.default()
@@ -26,35 +26,31 @@ activity = discord.Activity(
 bot = commands.Bot('!', intents=intents)
 
 
-### bot control
-# for dev control, lock all output to DEV_CHANNEL
-on_maintenance = True
-
-
 ### initializer
 @bot.event 
 async def on_ready():
     global activity
-
+    
     print(f'{bot.user} is launching...')
+    await bot.change_presence(activity=activity)
+    shared.CogBase.bot = bot
+
+    load_config()
 
     #tts.routine_check.start()
-    await bot.change_presence(activity=activity)
-    await setup_logger(bot)
-    
-    print(f'{bot.user} is setting up...')
+    await setup_logger(bot, 1.0)
 
     modules = os.path.join(shared.cwd, 'modules')
     for module in os.listdir(modules):
         module_dir = os.path.join(modules, module)
         if os.path.isdir(module_dir) and os.path.exists(os.path.join(module_dir, '__init__.py')):     
-            print(f"loading module >> {module}")
+            print(f">> loading module >> {module}")
             await bot.load_extension(f"modules.{module}.__init__")
-            print('success')
+            print('>> success')
 
-    config = await load_config(bot)
-    print(f'bot version: {config.runtime.version}')
+    print(f'runtime version: {shared.CogBase.config.runtime.version}')
 
+    shared.CogBase.bot_ready = True
     print(f'{bot.user} is now ready!')
             
 

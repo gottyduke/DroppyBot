@@ -5,31 +5,14 @@ import shared
 from prodict import Prodict
 
 
-class Config(shared.CogBase):
-    def __init__(self, bot):
-        super().__init__(bot)
+def load_config(filename='config.json'):
+    file = os.path.join(shared.cwd, filename)
+    if not os.path.exists(file):
+        raise FileNotFoundError('Expecting config.json')
 
-        file = os.path.join(shared.cwd, 'config.json')
-        if not os.path.exists(file):
-            raise FileNotFoundError('Expecting config.json')
-
-        with open(file, 'rb') as f:
-            self.config = Prodict.from_dict(json.load(f))
-            self.log(None, f'loaded config file [{file}]')
-        
-    def get(self):
-        return self.config
-        
-
-config: Config = None
-
-
-async def load_config(bot):
-    global config
-
-    config = Config(bot)
-    return config.get()
-
-
-def get_config():
-    return config.get()
+    with open(file, 'rb') as f:
+        shared.CogBase.config = Prodict.from_dict(json.load(f))
+        if shared.CogBase.config is None:
+            raise RuntimeError('config file is not initialized')
+        print(f'current config profile [{file}]')
+    

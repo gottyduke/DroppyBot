@@ -10,12 +10,9 @@ import discord
 from discord.ext import commands, tasks
 
 
-# preset value
-# log pool flush interval
-log_interval = 60.0
-
-
 class Logger():
+    log_interval = 60.0
+
     class LogLevel(enum.Enum):
         INFO = 1
         DEBUG = 2
@@ -24,7 +21,9 @@ class Logger():
         TRACE = 5
 
 
-    def __init__(self, bot):
+    def __init__(self, bot, interval):
+        global log_interval
+
         self.bot: commands.Bot = bot
         self.logpool = queue.Queue()
         self.session_start = None
@@ -37,6 +36,8 @@ class Logger():
 
         self.saved_channel = channel
         self.flush.start()
+
+        log_interval = interval
 
 
     @tasks.loop(seconds=log_interval)
@@ -90,10 +91,10 @@ class Logger():
 logger: Logger = None
 
 
-async def setup_logger(bot):
+async def setup_logger(bot, interval):
     global logger
     
-    logger = Logger(bot)
+    logger = Logger(bot, interval)
     await logger.report_success()
 
 

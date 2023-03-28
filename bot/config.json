@@ -21,6 +21,10 @@
             "max_entry_per_user": 12
         }
     },
+    "gpti": {
+        "dimension": "512x512",
+        "painting_indicator": "小G胡乱作画中..."
+    },
     "tts": {
         "region": "eastus",
         "neural": {
