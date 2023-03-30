@@ -3,7 +3,7 @@
         "version": "0.6.10",
         "log": {
             "session_interval": 60.0,
-            "entry_truncation": 128.0
+            "entry_truncation": 256.0
         }
     },
     "bot": {
@@ -14,7 +14,15 @@
         }
     },
     "gpt": {
-        "default_model": "gpt-3.5-turbo-0301",
+        "model": {
+            "default": "gpt-3.5-turbo-0301",
+            "available": [
+                "gpt-3.5-turbo",
+                "gpt-3.5-turbo-0301",
+                "gpt-4",
+                "gpt-4-0314"
+            ]
+        },
         "thinking_indicator": "小G捏造事实中...",
         "contextual": {
             "in_memory_timeframe": 600.0,
@@ -22,14 +30,24 @@
         }
     },
     "gpti": {
-        "dimension": "512x512",
+        "dimension": {
+            "default": "512x512",
+            "available": [
+                "256x256",
+                "512x512",
+                "1024x1024"
+            ]
+        },
         "painting_indicator": "小G胡乱作画中..."
     },
     "tts": {
         "region": "eastus",
         "neural": {
             "culture": "zh_CN",
-            "speaker": "Xiaoyi"
+            "default": "Xiaoyi",
+            "available": [
+                "Xiaoyi"
+            ]
         },
         "reintroduce_interval": 30.0,
         "routine_interval": 30.0,

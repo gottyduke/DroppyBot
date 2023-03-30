@@ -2,7 +2,6 @@ import datetime
 import os
 
 import discord
-#import modules.tts.tts as tts
 from discord.ext import commands
 from util.config import load_config
 from util.logger import setup_logger
@@ -26,6 +25,12 @@ activity = discord.Activity(
 bot = commands.Bot('!', intents=intents)
 
 
+### dev flag
+extension_status = {
+    'gpt': False
+}
+
+
 ### initializer
 @bot.event 
 async def on_ready():
@@ -45,8 +50,11 @@ async def on_ready():
         module_dir = os.path.join(modules, module)
         if os.path.isdir(module_dir) and os.path.exists(os.path.join(module_dir, '__init__.py')):     
             print(f">> loading module >> {module}")
-            await bot.load_extension(f"modules.{module}.__init__")
-            print('>> success')
+            if module in extension_status and extension_status[module]:
+                await bot.load_extension(f"modules.{module}.__init__")
+                print('>> success')
+            else:
+                print('>> passed')
 
     print(f'runtime version: {shared.CogBase.config.runtime.version}')
 

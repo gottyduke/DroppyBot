@@ -1,5 +1,6 @@
 # project local secrets
 secrets.py
+*.pem
 rules/
 
 # byte-compiled / optimized / DLL files
