@@ -49,7 +49,8 @@ class CogBase():
     def log(self, message: discord.Message, entry):
         if entry == '':
             return
-        author, channel = ''
+        author = ''
+        channel = ''
         if message is None:
             channel = 'internal'
         else:

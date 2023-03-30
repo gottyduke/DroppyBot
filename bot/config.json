@@ -3,7 +3,7 @@
         "version": "0.6.10",
         "log": {
             "session_interval": 60.0,
-            "entry_truncation": 256.0
+            "entry_truncation": 256
         }
     },
     "bot": {
@@ -15,18 +15,31 @@
     },
     "gpt": {
         "model": {
-            "default": "gpt-3.5-turbo-0301",
+            "default": "gpt-3.5-turbo",
             "available": [
-                "gpt-3.5-turbo",
-                "gpt-3.5-turbo-0301",
-                "gpt-4",
-                "gpt-4-0314"
+                {
+                    "name": "gpt-3.5-turbo",
+                    "max_token": 4096
+                },
+                {
+                    "name": "gpt-3.5-turbo-0301",
+                    "max_token": 4096
+                },
+                {
+                    "name": "gpt-4",
+                    "max_token": 8096
+                },
+                {
+                    "name": "gpt-4-0314",
+                    "max_token": 8096
+                }
             ]
         },
         "thinking_indicator": "小G捏造事实中...",
         "contextual": {
             "in_memory_timeframe": 600.0,
-            "max_entry_per_user": 12
+            "max_ctx_percentage": 0.60,
+            "max_ctx_per_user": 12
         }
     },
     "gpti": {

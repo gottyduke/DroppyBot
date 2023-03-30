@@ -24,6 +24,7 @@ git clone https://github.com/gottyduke/DroppyBot
 cd DroppyBot
 pip install -r requirements.txt
 ```
+[FFMPeg](https://ffmpeg.org/)
 
 
 ## environments

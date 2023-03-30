@@ -14,5 +14,5 @@ def load_config(filename='config.json'):
         shared.CogBase.config = Prodict.from_dict(json.load(f))
         if shared.CogBase.config is None:
             raise RuntimeError('config file is not initialized')
-        print(f'current config profile [{file}]')
+        print(f'current config profile [{os.path.relpath(file)}]')
     

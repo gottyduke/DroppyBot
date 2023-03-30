@@ -27,7 +27,7 @@ bot = commands.Bot('!', intents=intents)
 
 ### dev flag
 extension_status = {
-    'gpt': False
+    'gpt': True
 }
 
 
