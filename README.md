@@ -10,7 +10,6 @@
 + gpti
   + 使用`DALL-E`进行图片生成
   + 提供`256`, `512`, 以及`1024`像素
-  + 可生成同义多图(same source variation)
 + tts
   + 使用`azure-cognitive-service`进行文字转语音
   + 转播dc用户的文字消息

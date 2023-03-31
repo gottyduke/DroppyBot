@@ -2,6 +2,7 @@ import json
 import os
 
 import shared
+
 from prodict import Prodict
 
 
@@ -10,9 +11,14 @@ def load_config(filename='config.json'):
     if not os.path.exists(file):
         raise FileNotFoundError('Expecting config.json')
 
+    config = Prodict()
     with open(file, 'rb') as f:
-        shared.CogBase.config = Prodict.from_dict(json.load(f))
-        if shared.CogBase.config is None:
+        config = Prodict.from_dict(json.load(f))
+        if config is None:
             raise RuntimeError('config file is not initialized')
-        print(f'current config profile [{os.path.relpath(file)}]')
+        else:
+            shared.CogBase.config = config
+    
+    print(f'current config profile [{os.path.relpath(file)}]')
+    return config
     

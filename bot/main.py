@@ -1,11 +1,12 @@
-import datetime
 import os
 
-import discord
-from discord.ext import commands
 from util.config import load_config
 from util.logger import setup_logger
 import shared
+
+import discord
+from discord.ext import commands
+
 
 ### bot instance
 intents = discord.Intents.default()
@@ -18,33 +19,17 @@ intents.guilds = True
 intents.members = True
 intents.voice_states = True
 
-activity = discord.Activity(
-    type=discord.ActivityType.listening,
-    name='whispererererer..')
-
 bot = commands.Bot('!', intents=intents)
 
 
 ### dev flag
 extension_status = {
-    'gpt': True
+    'gpt': True,
+    'tts': False
 }
 
 
-### initializer
-@bot.event 
-async def on_ready():
-    global activity
-    
-    print(f'{bot.user} is launching...')
-    await bot.change_presence(activity=activity)
-    shared.CogBase.bot = bot
-
-    load_config()
-
-    #tts.routine_check.start()
-    await setup_logger(bot, 1.0)
-
+async def scan_and_load():
     modules = os.path.join(shared.cwd, 'modules')
     for module in os.listdir(modules):
         module_dir = os.path.join(modules, module)
@@ -56,7 +41,26 @@ async def on_ready():
             else:
                 print('>> passed')
 
-    print(f'runtime version: {shared.CogBase.config.runtime.version}')
+
+### initializer
+@bot.event 
+async def on_ready():
+    config = load_config()
+
+    print(f'{bot.user} is launching...')
+    bot.command_prefix = config.bot.command_prefix
+    activity = discord.Activity()
+    activity.type = discord.ActivityType[config.bot.presense.type]
+    activity.name = config.bot.presense.name
+    activity.details = config.bot.presense.details
+    await bot.change_presence(activity=activity)
+
+    shared.CogBase.bot = bot
+
+    await setup_logger(bot, 1)
+    await scan_and_load()
+
+    print(f'runtime version: {config.runtime.version}')
 
     shared.CogBase.bot_ready = True
     print(f'{bot.user} is now ready!')

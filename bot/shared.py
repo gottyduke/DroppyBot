@@ -15,7 +15,7 @@ cwd = os.path.realpath(os.path.dirname(__file__))
 
 
 ### shared ###
-class CogBase():
+class CogBase:
     bot: commands.Bot = None
     bot_ready = False
     config: Prodict = None
@@ -30,8 +30,7 @@ class CogBase():
     
     
     async def prepass(self, message: discord.Message):
-        if  not self.bot_ready or message.author == self.bot.user or \
-            not message.content.startswith(self.bot.command_prefix):
+        if not self.bot_ready or message.author == self.bot.user:
             return None
         else:
             if self.on_maintenance and message.channel.id != int(os.environ['DEV_CHANNEL']):
@@ -47,7 +46,7 @@ class CogBase():
         
 
     def log(self, message: discord.Message, entry):
-        if entry == '':
+        if entry == '' or entry.isspace():
             return
         author = ''
         channel = ''
@@ -57,6 +56,7 @@ class CogBase():
             author = message.author
             channel = 'DM' if type(message.channel) is discord.DMChannel else message.guild.name
         header = f" **__[[{channel}]]__** {author} >> "
+
         log(header + entry)
 
 

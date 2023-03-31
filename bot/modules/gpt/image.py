@@ -1,6 +1,7 @@
 import os
 
 from shared import CogBase
+
 import discord
 from discord.ext import commands
 import openai
@@ -19,11 +20,9 @@ class GPTIHandler(CogBase, commands.Cog):
         response = await openai.Image.acreate(
             prompt=prompt,
             n=1,
-            size=self.config.gpti.dimension.default
-        )
+            size=self.config.gpti.dimension.default)
 
         embed = discord.Embed()
         embed.set_image(url=response.data[0].url)
-        print(type(response))
         await message.edit(embed=embed)
-        self.log(message, f"`gpti {prompt}` | {message.jump_url}")
+        self.log(ctx.message, f"`gpti {prompt}` | {message.jump_url}")

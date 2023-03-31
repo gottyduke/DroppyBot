@@ -2,10 +2,10 @@ import datetime
 import enum
 import re
 
-import discord
-import shared
-from util.logger import log
+from shared import CogBase
 import modules.tts.session as session
+
+import discord
 import urlextract
 
 

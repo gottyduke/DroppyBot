@@ -1,10 +1,10 @@
 import datetime
 import enum
 import os
+import queue
 import requests
 import socket
 import time
-import queue
 
 import discord
 from discord.ext import commands, tasks
@@ -14,16 +14,14 @@ class Logger():
     log_interval = 60.0
 
     class LogLevel(enum.Enum):
-        INFO = 1
-        DEBUG = 2
+        ERROR = 1
+        INFO = 2
         WARN = 3
-        ERROR = 4
-        TRACE = 5
+        DEBUG = 4
+        TRACE = 6
 
 
     def __init__(self, bot, interval):
-        global log_interval
-
         self.bot: commands.Bot = bot
         self.logpool = queue.Queue()
         self.session_start = None
@@ -37,7 +35,7 @@ class Logger():
         self.saved_channel = channel
         self.flush.start()
 
-        log_interval = interval
+        Logger.log_interval = interval
 
 
     @tasks.loop(seconds=log_interval)
@@ -47,7 +45,7 @@ class Logger():
         
         self.session_end = time.time()
         elapsed = self.session_end - self.session_start
-        if elapsed < log_interval:
+        if elapsed < self.log_interval:
             return
 
         msg = f"*SESSION [{datetime.datetime.fromtimestamp(int(self.session_start)).strftime('%Y/%m/%d %H:%M:%S')} - "
@@ -72,8 +70,11 @@ class Logger():
         if self.session_start is None:
             self.session_start = time.time()
 
-        msg = f"{datetime.datetime.now().strftime('%H:%M:%S')} **[{level.name}]** {msg}"
+        msg = f"{datetime.datetime.now().strftime('%H:%M:%S')} **{level.name}** {msg}"
         self.logpool.put(msg)
+        msg = msg.replace(level.name, f"\033[9{level.value}m{level.name}\033[0m")\
+                 .replace(' **__', ' \033[1m\033[4m').replace('__** ', '\033[0m ')\
+                 .replace(' **', ' \033[1m').replace('** ', '\033[0m ')
         print(msg)
 
         self.flush.restart()
