@@ -8,7 +8,6 @@ import modules.tts.session as session
 import discord
 import urlextract
 
-
 # global
 _token_pair = {
     # names
@@ -40,15 +39,14 @@ def alias_name(user_id):
     return None
 
 
-
 # export
 class SpeechType(enum.Enum):
-    UNDEF=0,
-    TEXT=1,
-    EMOJI=2,
-    URL=3,
-    MENTION=4,
-    REPLY=5,
+    UNDEF = 0,
+    TEXT = 1,
+    EMOJI = 2,
+    URL = 3,
+    MENTION = 4,
+    REPLY = 5,
 
 
 class Speech():
@@ -80,26 +78,30 @@ async def process(message: discord.Message):
         rec_alias = alias_name(recepient.id)
         if rec_alias is None:
             rec_alias = recepient.name
-        valid_speech.append(Speech(alias, rec_alias, message.created_at, SpeechType.REPLY))
+        valid_speech.append(
+            Speech(alias, rec_alias, message.created_at, SpeechType.REPLY))
 
     lex = re.findall('<.*?>', content)
     for em in lex:
         # emoji
         if em[1] == ':':
             # singular speech
-            valid_speech.append(Speech(alias, em[1:-1], message.created_at, SpeechType.EMOJI))
+            valid_speech.append(
+                Speech(alias, em[1:-1], message.created_at, SpeechType.EMOJI))
 
             content = content.replace(em, '')
         # mentions
-        elif em[1] == '@':   
+        elif em[1] == '@':
             mention = shared.bot.get_user(int(em[2:-1]))
             mention_alias = alias_name(mention.id)
             if mention_alias is None:
                 mention_alias = mention.name
-            
+
             # singular speech
             if len(lex) == 1:
-                valid_speech.append(Speech(alias, mention_alias, message.created_at, SpeechType.MENTION))
+                valid_speech.append(
+                    Speech(alias, mention_alias, message.created_at,
+                           SpeechType.MENTION))
                 content = content.replace(em, '')
             else:
                 content = content.replace(em, mention_alias)
@@ -111,11 +113,13 @@ async def process(message: discord.Message):
     urls = ext.find_urls(content, with_schema_only=True)
     for url in urls:
         if len(urls) == 1:
-            valid_speech.append(Speech(alias, url, message.created_at, SpeechType.URL))
+            valid_speech.append(
+                Speech(alias, url, message.created_at, SpeechType.URL))
         content = content.replace(url, '')
 
     # text
     if not content.isspace() and content != '':
-        valid_speech.append(Speech(alias, content.strip(), message.created_at, speech_type))
+        valid_speech.append(
+            Speech(alias, content.strip(), message.created_at, speech_type))
 
     return valid_speech

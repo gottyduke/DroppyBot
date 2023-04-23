@@ -1,9 +1,9 @@
 import json
 import os
 
-import shared
-
 from prodict import Prodict
+
+import shared
 
 
 def load_config(filename='config.json'):
@@ -18,7 +18,6 @@ def load_config(filename='config.json'):
             raise RuntimeError('config file is not initialized')
         else:
             shared.CogBase.config = config
-    
+
     print(f'current config profile [{os.path.relpath(file)}]')
     return config
-    

@@ -46,19 +46,17 @@
     },
     "gpti": {
         "dimension": {
+            "small": "256x256",
             "default": "512x512",
-            "available": [
-                "256x256",
-                "512x512",
-                "1024x1024"
-            ]
+            "large": "1024x1024"
         },
-        "painting_indicator": "小G胡乱作画中..."
+        "painting_indicator": "小G胡乱作画中...",
+        "painting_completed": "小G乱画: "
     },
     "tts": {
         "region": "eastus",
         "neural": {
-            "culture": "zh_CN",
+            "culture": "zh-CN",
             "default": "Xiaoyi",
             "available": [
                 "Xiaoyi"

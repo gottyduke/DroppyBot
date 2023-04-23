@@ -1,0 +1,1 @@
+gci . -dir -recurse | ?{$_.name -eq '__pycache__'} | rm -recurse -force -confirm:$false -erroraction:silentlycontinue

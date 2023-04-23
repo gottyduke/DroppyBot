@@ -20,29 +20,25 @@ class Logger():
         DEBUG = 4
         TRACE = 6
 
-
-    def __init__(self, bot, interval):
+    def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.logpool = queue.Queue()
         self.session_start = None
         self.session_end = None
         self.session_count = 0
 
-        channel = self.bot.get_channel(int(os.environ['DEV_CHANNEL']))
+        channel = self.bot.get_channel(int(os.environ["DEV_CHANNEL"]))
         if channel is None:
-            raise Exception(f'Log channel does not exist!')
+            raise RuntimeError("Log channel does not exist!")
 
         self.saved_channel = channel
         self.flush.start()
-
-        Logger.log_interval = interval
-
 
     @tasks.loop(seconds=log_interval)
     async def flush(self):
         if self.session_start is None:
             return
-        
+
         self.session_end = time.time()
         elapsed = self.session_end - self.session_start
         if elapsed < self.log_interval:
@@ -56,49 +52,49 @@ class Logger():
             log = self.logpool.get()
             if log is None:
                 break
-            msg += f'- {log}\n'
+            msg += f"- {log}\n"
 
         await self.saved_channel.send(msg)
         self.session_start = None
         self.session_end = None
 
-    
     def log(self, msg: str, level: LogLevel = LogLevel.INFO):
         if self.saved_channel is None:
-            raise ValueError(f'Log channel has not been initialized!')
-        
+            raise ValueError("Log channel has not been initialized!")
+
         if self.session_start is None:
             self.session_start = time.time()
 
         msg = f"{datetime.datetime.now().strftime('%H:%M:%S')} **{level.name}** {msg}"
         self.logpool.put(msg)
         msg = msg.replace(level.name, f"\033[9{level.value}m{level.name}\033[0m")\
-                 .replace(' **__', ' \033[1m\033[4m').replace('__** ', '\033[0m ')\
-                 .replace(' **', ' \033[1m').replace('** ', '\033[0m ')
+                 .replace(" **__", " \033[1m\033[4m").replace("__** ", "\033[0m ")\
+                 .replace(" **", " \033[1m").replace("** ", "\033[0m ")
         print(msg)
 
         self.flush.restart()
 
-
     async def report_success(self):
-        await self.saved_channel.send(embed=discord.Embed(description=f"```\ntime : {datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
-                                    f"name : {socket.gethostname()}\n"
-                                    f"fqdn : {socket.getfqdn()}\n"
-                                    f"ipv4 : {socket.gethostbyname(socket.gethostname())}\n"
-                                    f"addr : {requests.get('https://api.ipify.org').text}\n```",
-                                    color=discord.Color.green(), title=f'{self.bot.user} 已上线!'))
+        login_info = \
+            f"```\ntime : {datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"\
+            f"name : {socket.gethostname()}\n"\
+            f"fqdn : {socket.getfqdn()}\n"\
+            f"ipv4 : {socket.gethostbyname(socket.gethostname())}\n"\
+            f"addr : {requests.get('https://api.ipify.org').text}\n```"
+
+        await self.saved_channel.send(
+            embed=discord.Embed(description=login_info, color=discord.Color.green(), title=f"{self.bot.user} 已上线!"))
 
 
 logger: Logger = None
 
 
-async def setup_logger(bot, interval):
+async def setup_logger(bot):
     global logger
-    
-    logger = Logger(bot, interval)
+
+    logger = Logger(bot)
     await logger.report_success()
 
 
 def log(msg: str):
     logger.log(msg)
-    

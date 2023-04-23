@@ -1,66 +1,78 @@
 import os
 
-from azure.cognitiveservices.speech import speech, SpeechConfig, SpeechSynthesizer, SpeechSynthesisOutputFormat
 import discord
+from azure.cognitiveservices.speech import speech, SpeechConfig, SpeechSynthesizer, SpeechSynthesisOutputFormat
 from discord.ext import commands
 from prodict import Prodict
-from util.logger import log
+
+import util.logger
 try:
     import modules.secrets
 except ModuleNotFoundError:
     pass
 
-
 cwd = os.path.realpath(os.path.dirname(__file__))
 
 
-### shared ###
+# shared cog addons
 class CogBase:
     bot: commands.Bot = None
     bot_ready = False
     config: Prodict = None
     on_maintenance = False
 
-
     @staticmethod
-    def as_embed(msg, color_owner: discord.User=None, color=discord.Color.red()):
+    def as_embed(msg, color_owner: discord.User = None, color=discord.Color.red()):
+        """
+        shared embed builder to accomodate user's top role color
+        """
+
         if color_owner is not None:
             color = color_owner.color
         return discord.Embed(color=color, description=msg)
-    
-    
+
     async def prepass(self, message: discord.Message):
+        """
+        optional 1st layer filter for messaging if using exclusive commanding
+        """
+
         if not self.bot_ready or message.author == self.bot.user:
             return None
         else:
-            if self.on_maintenance and message.channel.id != int(os.environ['DEV_CHANNEL']):
-                await message.reply(embed=self.as_embed('>维护中<'))
+            if self.on_maintenance and message.channel.id != int(os.environ["DEV_CHANNEL"]):
+                await message.reply(embed=self.as_embed(">维护中<"))
                 return None
 
-            raw = message.content.strip().split(' ', 1)
+            raw = message.content.strip().split(" ", 1)
             cmd = raw[0]
-            if cmd == '':
+            if cmd == "":
                 return None
-            prompt = raw[1].strip() if len(raw) > 1 else ''
+            prompt = raw[1].strip() if len(raw) > 1 else ""
             return (cmd.lower(), prompt)
-        
 
-    def log(self, message: discord.Message, entry):
-        if entry == '' or entry.isspace():
+    @staticmethod
+    def log(message: discord.Message, entry: str):
+        """
+        shared logger method
+        """
+
+        if entry == "" or entry.isspace():
             return
-        author = ''
-        channel = ''
+        author = ""
+        channel = ""
         if message is None:
-            channel = 'internal'
+            channel = "internal"
         else:
             author = message.author
-            channel = 'DM' if type(message.channel) is discord.DMChannel else message.guild.name
-        header = f" **__[[{channel}]]__** {author} >> "
+            channel = "DM" if type(message.channel) is discord.DMChannel else message.guild.name
 
-        log(header + entry)
+        # log format
+        header = f" **__[[{channel}]]__** {author + ' '}>> "
+
+        util.logger.log(header + entry)
 
 
-speech_config = SpeechConfig(subscription=os.environ['ACS_KEY'], region='eastus')
+speech_config = SpeechConfig(subscription=os.environ["ACS_KEY"], region="eastus")
 speech.audio.AudioOutputConfig(filename='cache.wav')
 speech_config.speech_synthesis_voice_name = 'zh-CN-XiaoyiNeural'
 speech_config.set_speech_synthesis_output_format(SpeechSynthesisOutputFormat.Audio24Khz96KBitRateMonoMp3)
