@@ -21,7 +21,7 @@ intents.voice_states = True
 bot = commands.Bot("!", intents=intents)
 
 # dev flag
-enabled_module = {"gpt": False, "tts": True}
+enabled_module = {"gpt": True, "tts": False}
 
 
 async def scan_and_load():

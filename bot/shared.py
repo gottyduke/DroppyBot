@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import discord
 from azure.cognitiveservices.speech import speech, SpeechConfig, SpeechSynthesizer, SpeechSynthesisOutputFormat
@@ -20,6 +21,7 @@ class CogBase:
     bot_ready = False
     config: Prodict = None
     on_maintenance = False
+    help_info: list[str] = []
 
     @staticmethod
     def as_embed(msg, color_owner: discord.User = None, color=discord.Color.red()):
@@ -27,9 +29,14 @@ class CogBase:
         shared embed builder to accomodate user's top role color
         """
 
+        embed = discord.Embed(description=msg).set_footer(text=f"使用 {CogBase.bot.command_prefix}help 命令来查看新功能!",
+                                                          icon_url=CogBase.bot.user.display_avatar.url)
         if color_owner is not None:
             color = color_owner.color
-        return discord.Embed(color=color, description=msg)
+            embed.set_author(name=color_owner.display_name, icon_url=color_owner.display_avatar.url)
+
+        embed.color = color
+        return embed
 
     async def prepass(self, message: discord.Message):
         """
@@ -63,13 +70,11 @@ class CogBase:
         if message is None:
             channel = "internal"
         else:
-            author = message.author
+            author = message.author.name
             channel = "DM" if type(message.channel) is discord.DMChannel else message.guild.name
 
         # log format
-        header = f" **__[[{channel}]]__** {author + ' '}>> "
-
-        util.logger.log(header + entry)
+        util.logger.log(f" **__[[{channel}]]__** {author + ' '}>> {entry}")
 
 
 speech_config = SpeechConfig(subscription=os.environ["ACS_KEY"], region="eastus")

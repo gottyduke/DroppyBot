@@ -3,6 +3,7 @@
         "version": "0.6.10",
         "log": {
             "session_interval": 60.0,
+            "do_truncate": false,
             "entry_truncation": 256
         }
     },

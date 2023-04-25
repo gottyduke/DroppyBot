@@ -19,8 +19,9 @@ class GPTHandler(CogBase, commands.Cog):
         self.active_model = self.config.gpt.model.default
 
         self.compiled_gpt_cmd = f"{self.bot.command_prefix}gpt"
+        self.compiled_gpt4_cmd = f"{self.bot.command_prefix}gpt4"
 
-    async def build_conversation(self, msg: discord.Message):
+    async def retrieve_conversation(self, msg: discord.Message):
         """
         retrieve ongoing conversation as contextual input
         """
@@ -52,7 +53,7 @@ class GPTHandler(CogBase, commands.Cog):
 
             prompts.append({
                 "role": "user",
-                "content": question.content.replace(self.compiled_gpt_cmd, ""),
+                "content": question.content.replace(self.compiled_gpt_cmd, "").replace(self.compiled_gpt4_cmd, ""),
             })
 
             if question.reference is None or question.reference.message_id is None:
@@ -61,6 +62,23 @@ class GPTHandler(CogBase, commands.Cog):
 
             retrieval -= 1
         return prompts
+
+    async def request_and_reply(self, prompt, requests, aid, msg: discord.Message, reply: discord.Message):
+        # request for chat completion
+        response = await openai.ChatCompletion.acreate(model=self.active_model, messages=requests)
+        embed = self.as_embed(f"{response.choices[0].message.content}")
+
+        # respond to user
+        reply = await reply.edit(embed=embed)
+
+        # save user specific context
+        if aid in self.user_ctx and self.user_ctx[aid] is not None:
+            self.user_ctx[aid].append((msg, reply))
+
+        self.log(
+            msg,
+            f"{self.active_model} ({response.usage.prompt_tokens - len(prompt)})+{len(prompt)}+{response.usage.completion_tokens}={response.usage.total_tokens}```{prompt}``````{embed.description}```"
+        )
 
     @commands.command()
     async def gpt(self, ctx: commands.Context, *, prompt):
@@ -100,33 +118,43 @@ class GPTHandler(CogBase, commands.Cog):
                 else:
                     self.user_ctx[aid].remove((history, answer))
 
-        # gpt request
+        # request for chat completion
         prompts.append({"role": "user", "content": prompt})
-        response = await openai.ChatCompletion.acreate(model=self.active_model, messages=prompts)
-
-        # respond to user
-        embed.description = f"{response.choices[0].message.content}"
-        reply = await reply.edit(embed=embed)
-
-        # save user specific context
-        if aid in self.user_ctx and self.user_ctx[aid] is not None:
-            self.user_ctx[aid].append((ctx.message, reply))
-
-        self.log(
-            ctx.message,
-            f"`{self.active_model} {prompt}` | ({response.usage.prompt_tokens - len(prompt)})+{len(prompt)}+{response.usage.completion_tokens}={response.usage.total_tokens}"
-        )
+        await self.request_and_reply(prompt, prompts, aid, ctx.message, reply)
 
     @commands.command()
     async def gpt4(self, ctx: commands.Context, *, prompt):
-        old_spec = str(self.active_model)
+        spec = str(self.active_model)
         self.active_model = self.config.gpt.model.advanced
         await self.gpt(ctx, prompt=prompt)
-        self.active_model = old_spec
+        self.active_model = spec
+
+    @commands.command()
+    async def gptinit(self, ctx: commands.Context, *, init):
+        if await self.prepass(ctx.message) is None:
+            return
+
+        aid = ctx.author.id
+        original = ""
+        if aid in self.user_init and self.user_init[aid] is not None:
+            original = f"```{self.user_init[aid]}```->"
+        self.user_init[aid] = init
+
+        await ctx.reply(embed=self.as_embed(f"您的GPT设定已更改!{original}```{init}```", ctx.author), ephemeral=True)
+        self.log(ctx.message, f"gpt-init ({len(init)}) {original}```{init}```")
 
     @commands.Cog.listener()
     async def on_message(self, msg: discord.Message):
         if await self.prepass(msg) is None:
+            return
+
+        # check if user replied to a gpt response for a "contextual conversation"
+        ref = msg.reference
+        if ref is None or ref.resolved is None:
+            return
+
+        # non contextual mode, but replied by mistake
+        if msg.content.startswith(self.compiled_gpt_cmd) or msg.content.startswith(self.compiled_gpt4_cmd):
             return
 
         # placeholder
@@ -136,9 +164,9 @@ class GPTHandler(CogBase, commands.Cog):
         # check if the replied message is also a replied message a.k.a a gpt response
         # using message id to resolve manually, due to discord API not attempting to chain de-reference
         prompts = []
-        prompt = msg.content.replace(f"{self.bot.command_prefix}gpt", "")
+        prompt = msg.content
         prompts.append({"role": "user", "content": prompt})
-        prompts += await self.build_conversation(msg)
+        prompts += await self.retrieve_conversation(msg)
 
         # prepend system init, for RP purpose or preset guidelines
         aid = msg.author.id
@@ -147,17 +175,4 @@ class GPTHandler(CogBase, commands.Cog):
 
         # request for chat completion
         prompts.reverse()
-        response = await openai.ChatCompletion.acreate(model=self.config.gpt.model.default, messages=prompts)
-
-        # respond to user
-        embed.description = f"{response.choices[0].message.content}"
-        reply = await reply.edit(embed=embed)
-
-        # save user specific context
-        if aid in self.user_ctx and self.user_ctx[aid] is not None:
-            self.user_ctx[aid].append((msg, reply))
-
-        self.log(
-            msg,
-            f"`{self.active_model} {prompt}` | ({response.usage.prompt_tokens - len(prompt)})+{len(prompt)}+{response.usage.completion_tokens}={response.usage.total_tokens}",
-        )
+        await self.request_and_reply(prompt, prompts, aid, msg, reply)

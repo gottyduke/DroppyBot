@@ -54,7 +54,7 @@ pip install -r requirements.txt
 |`gpt`|`[prompt]`|向`chatGPT`文字补全提供prompt|
 |`gpt4`|`[prompt]`|向`chatGPT`文字补全提供prompt, 此处指定使用`gpt-4`模型|
 |`gpti`|`[prompt]`|向`DALL-E`图片生成提供prompt|
-|`tts`||tts活动|
+|`tts`||查看及管理tts活动|
 |`tts`|`add [username]`|(已移除)将指定dc用户添加至tts活动|
 |`tts`|`del [username]`|(已移除)将指定dc用户从tts活动中移除|
 |`tts`|`pause`|挂起当前tts活动|

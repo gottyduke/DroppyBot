@@ -58,7 +58,23 @@ class Logger():
         self.session_start = None
         self.session_end = None
 
-    def log(self, msg: str, level: LogLevel = LogLevel.INFO):
+    @staticmethod
+    def normalized_console_output(msg: str, level: LogLevel):
+        console_normalization = {
+            " **__": " \033[1m\033[4m",
+            "__** ": "\033[0m ",
+            " **": " \033[1m",
+            "** ": "\033[0m ",
+            "```": "\n"
+        }
+
+        msg = msg.replace(level.name, f"\033[9{level.value}m{level.name}\033[0m")
+        for deco, norm in console_normalization.items():
+            msg = msg.replace(deco, norm)
+
+        return msg
+
+    def log(self, msg: str, level=LogLevel.INFO):
         if self.saved_channel is None:
             raise ValueError("Log channel has not been initialized!")
 
@@ -67,10 +83,8 @@ class Logger():
 
         msg = f"{datetime.datetime.now().strftime('%H:%M:%S')} **{level.name}** {msg}"
         self.logpool.put(msg)
-        msg = msg.replace(level.name, f"\033[9{level.value}m{level.name}\033[0m")\
-                 .replace(" **__", " \033[1m\033[4m").replace("__** ", "\033[0m ")\
-                 .replace(" **", " \033[1m").replace("** ", "\033[0m ")
-        print(msg)
+
+        print(self.normalized_console_output(msg, level))
 
         self.flush.restart()
 
