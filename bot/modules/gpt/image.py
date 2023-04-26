@@ -34,4 +34,4 @@ class GPTIHandler(CogBase, commands.Cog):
         for res in responses.data:
             await ctx.send(res.url)
 
-        self.log(ctx.message, f"`gpti x{quantity} {prompt}` | {message.jump_url}")
+        self.log(ctx.message, f"`gpti [x{quantity}]({message.jump_url})```{prompt}```")

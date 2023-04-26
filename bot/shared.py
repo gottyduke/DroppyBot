@@ -21,7 +21,7 @@ class CogBase:
     bot_ready = False
     config: Prodict = None
     on_maintenance = False
-    help_info: list[str] = []
+    help_info: dict[str, list[discord.Embed]] = {}
 
     @staticmethod
     def as_embed(msg, color_owner: discord.User = None, color=discord.Color.red()):

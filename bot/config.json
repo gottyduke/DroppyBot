@@ -1,76 +1,74 @@
 {
-    "runtime": {
-        "version": "0.6.10",
-        "log": {
-            "session_interval": 60.0,
-            "do_truncate": false,
-            "entry_truncation": 256
-        }
-    },
     "bot": {
         "command_prefix": "!",
+        "log": {
+            "do_truncate": false,
+            "entry_truncation": 256,
+            "session_interval": 60.0
+        },
         "presense": {
-            "type": "listening",
+            "details": "",
             "name": "whispererererer..",
-            "details": ""
-        }
+            "type": "listening"
+        },
+        "version": "0.6.10"
     },
     "gpt": {
+        "contextual": {
+            "in_memory_timeframe": 600.0,
+            "max_ctx_per_user": 4,
+            "max_ctx_percentage": 0.6
+        },
         "model": {
-            "default": "gpt-3.5-turbo",
             "advanced": "gpt-4",
+            "default": "gpt-3.5-turbo",
             "spec": [
                 {
-                    "name": "gpt-3.5-turbo",
-                    "max_token": 4096
+                    "max_token": 4096,
+                    "name": "gpt-3.5-turbo"
                 },
                 {
-                    "name": "gpt-3.5-turbo-0301",
-                    "max_token": 4096
+                    "max_token": 4096,
+                    "name": "gpt-3.5-turbo-0301"
                 },
                 {
-                    "name": "gpt-4",
-                    "max_token": 8096
+                    "max_token": 8096,
+                    "name": "gpt-4"
                 },
                 {
-                    "name": "gpt-4-0314",
-                    "max_token": 8096
+                    "max_token": 8096,
+                    "name": "gpt-4-0314"
                 }
             ]
         },
-        "thinking_indicator": "小G捏造事实中...",
-        "contextual": {
-            "in_memory_timeframe": 600.0,
-            "max_ctx_percentage": 0.60,
-            "max_ctx_per_user": 4
-        }
+        "thinking_indicator": "小G捏造事实中..."
     },
     "gpti": {
         "dimension": {
-            "small": "256x256",
             "default": "512x512",
-            "large": "1024x1024"
+            "large": "1024x1024",
+            "small": "256x256"
         },
-        "painting_indicator": "小G胡乱作画中...",
-        "painting_completed": "小G乱画: "
+        "painting_completed": "小G乱画: ",
+        "painting_indicator": "小G胡乱作画中..."
     },
     "tts": {
-        "region": "eastus",
         "neural": {
-            "culture": "zh-CN",
-            "default": "Xiaoyi",
             "available": [
                 "Xiaoyi"
-            ]
+            ],
+            "culture": "zh-CN",
+            "default": "Xiaoyi"
         },
-        "reintroduce_interval": 30.0,
-        "routine_interval": 30.0,
         "nlp": {
             "cache": "cache/speech.wav",
-            "truncation": 256,
             "external_rules": [
                 "rules/user_alias"
-            ]
-        }
+            ],
+            "truncation": 256
+        },
+        "region": "eastus",
+        "reintroduce_interval": 30.0,
+        "routine_interval": 30.0
     }
 }
