@@ -1,7 +1,8 @@
 [flake8]
-extend-ignore = E501,F401,F841
+extend-ignore = E203,E501,F401,F841
 exclude =
     .git,
     __pycache__,
     dist
 max-complexity = 10
+max-line-length = 88

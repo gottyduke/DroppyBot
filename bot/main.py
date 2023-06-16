@@ -31,7 +31,9 @@ async def scan_and_load():
     modules = os.path.join(shared.cwd, "modules")
     for module in os.listdir(modules):
         module_dir = os.path.join(modules, module)
-        if os.path.isdir(module_dir) and os.path.exists(os.path.join(module_dir, "bootstrap.py")):
+        if os.path.isdir(module_dir) and os.path.exists(
+            os.path.join(module_dir, "bootstrap.py")
+        ):
             print(f">> loading module >> {module}")
             if module in enabled_module and enabled_module[module]:
                 await bot.load_extension(f"modules.{module}.bootstrap")
@@ -83,7 +85,10 @@ bot.help_command = None
 @bot.command()
 async def help(ctx: commands.Context, *, payload=None):
     if payload is not None:
-        if payload in shared.CogBase.help_info and shared.CogBase.help_info[payload] is not None:
+        if (
+            payload in shared.CogBase.help_info
+            and shared.CogBase.help_info[payload] is not None
+        ):
             return await ctx.reply(embeds=shared.CogBase.help_info[payload])
 
     catagories = discord.Embed(title="请使用以下命令查看详细类别:")

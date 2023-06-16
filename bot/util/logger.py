@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands, tasks
 
 
-class Logger():
+class Logger:
     log_interval = 60.0
 
     class LogLevel(enum.Enum):
@@ -65,7 +65,7 @@ class Logger():
             "__** ": "\033[0m ",
             " **": " \033[1m",
             "** ": "\033[0m ",
-            "```": "\n"
+            "```": "\n",
         }
 
         msg = msg.replace(level.name, f"\033[9{level.value}m{level.name}\033[0m")
@@ -76,7 +76,7 @@ class Logger():
 
     def log(self, msg: str, level=LogLevel.INFO):
         if self.saved_channel is None:
-            raise ValueError("Log channel has not been initialized!")
+            raise RuntimeError("Log channel has not been initialized!")
 
         if self.session_start is None:
             self.session_start = time.time()
@@ -89,15 +89,21 @@ class Logger():
         self.flush.restart()
 
     async def report_success(self):
-        login_info = \
-            f"```\ntime : {datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"\
-            f"name : {socket.gethostname()}\n"\
-            f"fqdn : {socket.getfqdn()}\n"\
-            f"ipv4 : {socket.gethostbyname(socket.gethostname())}\n"\
+        login_info = (
+            f"```\ntime : {datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
+            f"name : {socket.gethostname()}\n"
+            f"fqdn : {socket.getfqdn()}\n"
+            f"ipv4 : {socket.gethostbyname(socket.gethostname())}\n"
             f"addr : {requests.get('https://api.ipify.org').text}\n```"
+        )
 
         await self.saved_channel.send(
-            embed=discord.Embed(description=login_info, color=discord.Color.green(), title=f"{self.bot.user} 已上线!"))
+            embed=discord.Embed(
+                description=login_info,
+                color=discord.Color.green(),
+                title=f"{self.bot.user} 已上线!",
+            )
+        )
 
 
 logger: Logger = None
