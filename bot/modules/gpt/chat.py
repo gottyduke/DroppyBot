@@ -159,6 +159,7 @@ class GPTHandler(CogBase, commands.Cog):
                 {"role": "assistant", "content": answer.embeds[0].description}
             )
 
+            # using message id to resolve manually, due to discord API not attempting to chain de-reference
             question = answer.reference
             if question is None or question.message_id is None:
                 break
@@ -176,12 +177,7 @@ class GPTHandler(CogBase, commands.Cog):
                 self.active_model = self.config.gpt.model.advanced
                 prompt = prompt.removeprefix(self.compiled_gpt4_cmd)
 
-            prompts.append(
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            )
+            prompts.append({"role": "user", "content": prompt})
 
             if question.reference is None or question.reference.message_id is None:
                 break
@@ -305,21 +301,16 @@ class GPTHandler(CogBase, commands.Cog):
         if ref.resolved.author != self.bot.user:
             return
 
-        # non contextual mode, but replied by mistake
-        if msg.content.startswith(self.compiled_gpt_cmd):
-            return
-
-        # placeholder
-        embed = self.as_embed(self.config.gpt.thinking_indicator, msg.author)
-        reply = await msg.reply(embed=embed)
-
         # check if the replied message is also a replied message a.k.a a gpt response
-        # using message id to resolve manually, due to discord API not attempting to chain de-reference
         spec = str(self.active_model)
         prompts = []
         prompt = msg.content
         prompts.append({"role": "user", "content": prompt})
         prompts += await self.retrieve_conversation(msg)
+
+        # placeholder
+        embed = self.as_embed(self.config.gpt.thinking_indicator, msg.author)
+        reply = await msg.reply(embed=embed)
 
         # prepend system init, for RP purpose or preset guidelines
         aid = msg.author.id

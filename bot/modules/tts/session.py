@@ -5,8 +5,9 @@ import queue
 
 from shared import CogBase
 
+from azure.cognitiveservices.speech import AudioDataStream
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 
 class SessionContext:
@@ -112,22 +113,5 @@ class SessionControlView(discord.ui.View):
 class SessionManager(CogBase, commands.Cog):
     def __init__(self):
         self.active_session: dict[discord.Guild, SessionContext] = {}
-
-    @commands.command()
-    async def tts(self, ctx: commands.Context, cmd=None):
-        if ctx.guild not in self.active_session:
-            self.active_session[ctx.guild] = SessionContext()
-        session = self.active_session[ctx.guild]
-        status = None
-
-        if session.active_voice is not None:
-            status = self.as_embed("", color=discord.Color.green())
-            status.title = f"当前的tts活动(正在进行): **[{ctx.guild.name}]|<#{session.active_voice.channel.id}> ({len(session.active_users)})位参加者**"
-
-            for user in session.active_users:
-                status.description += f"- {user.alias} -> `{user.owner}`"
-        else:
-            status = self.as_embed("当前无正在进行的tts活动, 使用`👏参加🎤`按钮以创建新的tts活动")
-            session.active_users.clear()
-
-        await ctx.reply(embed=status, view=SessionControlView(session))
+        self.current_allowed_guild = 974365925526626304
+        self.guild: discord.Guild = None
