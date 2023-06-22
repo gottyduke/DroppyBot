@@ -168,15 +168,7 @@ class GPTHandler(CogBase, commands.Cog):
             if question is None or question.author != msg.author:
                 break
 
-            # find the gpt model used to initiate this conversation
             prompt = question.content
-            if prompt.startswith(self.compiled_gpt_cmd):
-                self.active_model = self.config.gpt.model.default
-                prompt = prompt.removeprefix(self.compiled_gpt_cmd)
-            elif prompt.startswith(self.compiled_gpt4_cmd):
-                self.active_model = self.config.gpt.model.advanced
-                prompt = prompt.removeprefix(self.compiled_gpt4_cmd)
-
             prompts.append({"role": "user", "content": prompt})
 
             if question.reference is None or question.reference.message_id is None:
@@ -302,7 +294,6 @@ class GPTHandler(CogBase, commands.Cog):
             return
 
         # check if the replied message is also a replied message a.k.a a gpt response
-        spec = str(self.active_model)
         prompts = []
         prompt = msg.content
         prompts.append({"role": "user", "content": prompt})
@@ -319,5 +310,7 @@ class GPTHandler(CogBase, commands.Cog):
 
         # request for chat completion
         prompts.reverse()
+        spec = str(self.active_model)
+        self.active_model = self.config.gpt.model.advanced
         await self.request_and_reply(prompt, prompts, msg, reply)
         self.active_model = spec
