@@ -17,3 +17,6 @@ build/
 dist/
 cache/
 *.wav
+
+# tts removed
+bot/modules/tts/
