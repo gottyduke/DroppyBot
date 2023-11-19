@@ -10,6 +10,7 @@ from azure.cognitiveservices.speech import (
 )
 from discord.ext import commands
 from prodict import Prodict
+from openai import OpenAI
 
 import util.logger
 
@@ -30,8 +31,9 @@ class CogBase:
     bot: commands.Bot = None
     bot_ready = False
     config: Prodict = None
-    on_maintenance = False
+    on_maintenance = True
     help_info: dict[str, list[discord.Embed]] = {}
+    endpoint: OpenAI = None
 
     @staticmethod
     def as_embed(msg, color_owner=None, color=discord.Color.red()):
@@ -41,7 +43,7 @@ class CogBase:
         """
 
         embed = discord.Embed(description=msg).set_footer(
-            text=f"使用 {CogBase.bot.command_prefix}help 命令来查看新功能!",
+            text=f"使用 {CogBase.bot.command_prefix}help 命令来查看新功能! 更新日期: 2023/11/19*",
             icon_url=CogBase.bot.user.display_avatar.url,
         )
 
@@ -65,7 +67,6 @@ class CogBase:
             if self.on_maintenance and message.channel.id != int(
                 os.environ["DEV_CHANNEL"]
             ):
-                await message.reply(embed=self.as_embed(">维护中<"))
                 return None
 
             raw = message.content.strip().split(" ", 1)
@@ -90,7 +91,7 @@ class CogBase:
             author = message.author
             channel = (
                 "DM"
-                if type(message.channel) is discord.DMChannel
+                if isinstance(message.channel, discord.channel.DMChannel)
                 else message.guild.name
             )
 

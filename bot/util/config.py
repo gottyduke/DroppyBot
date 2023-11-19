@@ -6,7 +6,7 @@ from prodict import Prodict
 import shared
 
 
-def load_config(filename="config.json"):
+def load_config(filename="rules/config.json"):
     file = os.path.join(shared.cwd, filename)
     if not os.path.exists(file):
         raise FileNotFoundError("Expecting config.json")

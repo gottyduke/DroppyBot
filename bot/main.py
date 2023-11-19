@@ -1,11 +1,11 @@
 import os
 
 import discord
+import shared
 from discord.ext import commands
 
 from util.config import load_config
 from util.logger import setup_logger
-import shared
 
 # bot instance
 intents = discord.Intents.default()
@@ -21,7 +21,7 @@ intents.voice_states = True
 bot = commands.Bot("!", intents=intents)
 
 # dev flag
-enabled_module = {"gpt": True, "tts": False}
+enabled_module = {"gpt": True, "telemetry": False}
 
 
 async def scan_and_load():
