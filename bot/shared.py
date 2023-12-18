@@ -31,7 +31,7 @@ class CogBase:
     bot: commands.Bot = None
     bot_ready = False
     config: Prodict = None
-    on_maintenance = True
+    on_maintenance = False
     help_info: dict[str, list[discord.Embed]] = {}
     endpoint: OpenAI = None
 
@@ -43,7 +43,7 @@ class CogBase:
         """
 
         embed = discord.Embed(description=msg).set_footer(
-            text=f"使用 {CogBase.bot.command_prefix}help 命令来查看新功能! 更新日期: 2023/11/19*",
+            text=f"使用 {CogBase.bot.command_prefix}help 命令来查看新功能! 更新日期: 2023/12/18*",
             icon_url=CogBase.bot.user.display_avatar.url,
         )
 

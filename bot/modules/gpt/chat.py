@@ -3,6 +3,7 @@ import json
 import os
 
 from shared import CogBase, cwd
+from modules.gpt.tools import GPTTools
 
 import discord
 from discord.ext import commands
@@ -22,7 +23,10 @@ class GPTHandler(CogBase, commands.Cog):
 
             已提供`gpt-3.5-turbo-1106`或`gpt-4-1106-preview`模型
 
-            *2023/11/19 更新:*
+            *2023/12/18 更新:*
+            + 已支持联网搜索, 结果基于互联网查找
+
+            2023/11/19 更新:
             + 训练数据已更新至2023年4月份
             + 支持长文本输入/输出(参考使用方法)
             + 支持图片识别/图片辅助的文字生成(参考使用方法)
@@ -91,7 +95,7 @@ class GPTHandler(CogBase, commands.Cog):
                 description=f"""
             使用GPT命令时, 将文件拖拽至输入栏即可附加此文件用于下次文字生成
 
-            文本类文件请自行转换为纯文本格式(`.txt`), 机器人未支持如`.docx`, `.pdf`等格式的自动转换
+            机器人未支持如`.docx`, `.pdf`等格式的自动转换, 文档类文件请自行转换为纯文本格式(`.txt`), 代码类文件可直接附加 
             
             可一次附加多个文件
             """,
@@ -125,6 +129,8 @@ class GPTHandler(CogBase, commands.Cog):
         self.user_token = int(
             self.max_token * self.config.gpt.contextual.max_ctx_percentage
         )
+
+        self.private_query = False
 
         self.compiled_gpt_cmd = f"{self.bot.command_prefix}gpt"
         self.compiled_gpt4_cmd = f"{self.bot.command_prefix}gpt4"
@@ -199,6 +205,9 @@ class GPTHandler(CogBase, commands.Cog):
         return prompts
 
     def format_response(self, response: str):
+        if response is None:
+            return [""]
+
         formatted = []
         if (
             not self.config.gpt.response.do_truncate
@@ -241,10 +250,48 @@ class GPTHandler(CogBase, commands.Cog):
         update user context storage and log the action
         """
 
+        # telemetry
+        tele_prompt_token = 0
+        tele_res_token = 0
+
         # request for chat completion
         completion = self.endpoint.chat.completions.create(
-            model=self.active_model, messages=requests
+            model=self.active_model,
+            messages=requests,
+            max_tokens=4096,
+            tools=self.config.gpt.tools,
         )
+        tele_prompt_token += completion.usage.prompt_tokens - len(prompt)
+        tele_res_token += completion.usage.completion_tokens
+
+        # if tools are called
+        if len(completion.choices[0].message.tool_calls) != 0:
+            tools: GPTTools = self.bot.get_cog("GPTTools")
+            if tools is not None:
+                tool_response = tools.process_tool_call(
+                    completion.choices[0].message.tool_calls[0]
+                )
+
+                requests.append(
+                    {
+                        "role": "assistant",
+                        "tool_calls": completion.choices[0].message.tool_calls,
+                    }
+                )
+                requests.append(
+                    {
+                        "role": "tool",
+                        "content": str(tool_response),
+                        "tool_call_id": completion.choices[0].message.tool_calls[0].id,
+                    }
+                )
+
+            # if tool call failed, fall back to default completion, otherwise commit
+            completion = self.endpoint.chat.completions.create(
+                model=self.active_model, messages=requests, max_tokens=4096
+            )
+            tele_prompt_token += completion.usage.prompt_tokens - len(prompt)
+            tele_res_token += completion.usage.completion_tokens
 
         # respond to user
         response = self.format_response(completion.choices[0].message.content)
@@ -258,10 +305,11 @@ class GPTHandler(CogBase, commands.Cog):
             if self.user_init[aid].strip() != "":
                 self.user_ctx[aid].append((msg, reply))
 
-        self.log(
-            msg,
-            f"{self.active_model} [({completion.usage.prompt_tokens - len(prompt)})+{len(prompt)}+{completion.usage.completion_tokens}={completion.usage.total_tokens}]({reply.jump_url})```{prompt}```",
-        )
+        if not self.private_query:
+            self.log(
+                msg,
+                f"{self.active_model} [({completion.usage.prompt_tokens - len(prompt)})+{len(prompt)}+{completion.usage.completion_tokens}={completion.usage.total_tokens}]({reply.jump_url})\n```{prompt}```",
+            )
 
     @commands.command()
     async def gpt(self, ctx: commands.Context, *, prompt):
@@ -310,7 +358,6 @@ class GPTHandler(CogBase, commands.Cog):
                 else:
                     self.user_ctx[aid].remove((history, answer))
 
-        spec = str(self.active_model)
         # append file inputs
         vision_prompts = [{"type": "text", "text": prompt}]
         if len(ctx.message.attachments) >= 1:
@@ -318,6 +365,11 @@ class GPTHandler(CogBase, commands.Cog):
                 # if vision assist is requested, switch to gpt-4-vision model
                 if file.content_type.startswith("image"):
                     self.active_model = self.config.gpt.model.vision
+                    self.max_token = next(
+                        model
+                        for model in self.config.gpt.model.spec
+                        if model["name"] == self.active_model
+                    )["max_token"]
                     vision_prompts.append(
                         {"type": "image_url", "image_url": file.proxy_url}
                     )
@@ -335,24 +387,20 @@ class GPTHandler(CogBase, commands.Cog):
 
         # request for chat completion
         await self.request_and_reply(prompt, prompts, ctx.message, reply)
-        self.active_model = spec
+        self.active_model = self.config.gpt.model.default
 
     @commands.command()
     async def gpt4(self, ctx: commands.Context, *, prompt):
         spec = str(self.active_model)
-        max_token = self.max_token
-
         self.active_model = self.config.gpt.model.advanced
-        self.max_token = next(
-            model
-            for model in self.config.gpt.model.spec
-            if model["name"] == self.active_model
-        )["max_token"]
-
         await self.gpt(ctx, prompt=prompt)
-
         self.active_model = spec
-        self.max_token = max_token
+
+    @commands.command()
+    async def gptp(self, ctx: commands.Context, *, prompt):
+        self.private_query = True
+        await self.gpt4(ctx, prompt=prompt)
+        self.private_query = False
 
     @commands.command()
     async def gptinit(self, ctx: commands.Context, *, init=None):
@@ -362,15 +410,15 @@ class GPTHandler(CogBase, commands.Cog):
         aid = ctx.author.id
         original = ""
         if aid in self.user_init and self.user_init[aid] is not None:
-            original = f"```{self.user_init[aid]}```->"
+            original = f"\n```{self.user_init[aid]}```->"
         self.user_init[aid] = init
 
         await ctx.reply(
-            embed=self.as_embed(f"您的GPT设定已更改!{original}```{init}```", ctx.author)
+            embed=self.as_embed(f"您的GPT设定已更改!{original}\n```{init}```", ctx.author)
         )
         self.log(
             ctx.message,
-            f"gpt-init ({len(init) if init is not None else 0}) {original}```{init}```",
+            f"gpt-init ({len(init) if init is not None else 0}) {original}\n```{init}```",
         )
         self.save_user_init()
 

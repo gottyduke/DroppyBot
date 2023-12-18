@@ -7,6 +7,7 @@ from discord.ext import commands
 from util.config import load_config
 from util.logger import setup_logger
 
+
 # bot instance
 intents = discord.Intents.default()
 intents.guilds = True

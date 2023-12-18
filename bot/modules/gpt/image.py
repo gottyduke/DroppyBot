@@ -48,6 +48,8 @@ class GPTIHandler(CogBase, commands.Cog):
     def __init__(self):
         self.compiled_gpti_cmd = f"{self.bot.command_prefix}gpti"
 
+        self.private_query = False
+
         self.help_info["GPTI"] = self.generate_help_info()
 
     @commands.command()
@@ -95,4 +97,11 @@ class GPTIHandler(CogBase, commands.Cog):
             )
             url.append(res.url)
 
-        self.log(ctx.message, f"gpti x{quantity}```{prompt}```{url}")
+        if not self.private_query:
+            self.log(ctx.message, f"gpti x{quantity}\n```{prompt}```{url}")
+
+    @commands.command()
+    async def gptip(self, ctx: commands.Context, *, prompt):
+        self.private_query = True
+        await self.gpti(ctx, prompt=prompt)
+        self.private_query = False

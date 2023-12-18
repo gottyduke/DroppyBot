@@ -3,6 +3,7 @@ import shared as shared
 
 from modules.gpt.chat import GPTHandler
 from modules.gpt.image import GPTIHandler
+from modules.gpt.tools import GPTTools
 from openai import OpenAI
 
 
@@ -11,6 +12,7 @@ async def setup(bot):
     shared.CogBase.endpoint = OpenAI(api_key=os.environ["OPENAI_KEY"])
     await bot.add_cog(GPTHandler())
     await bot.add_cog(GPTIHandler())
+    await bot.add_cog(GPTTools())
 
 
 # extension exit
