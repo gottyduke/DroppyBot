@@ -1,7 +1,6 @@
 # project local secrets
 secrets.py
 *.pem
-rules/
 
 # byte-compiled / optimized / DLL files
 __pycache__/
@@ -20,3 +19,4 @@ cache/
 
 # tts removed
 bot/modules/tts/
+bot/rules/user_alias.json

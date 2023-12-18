@@ -1,0 +1,128 @@
+{
+    "bot": {
+        "command_prefix": "!",
+        "log": {
+            "do_truncate": false,
+            "entry_truncation": 256,
+            "session_interval": 60.0
+        },
+        "presense": {
+            "details": "",
+            "name": "whispererererer..",
+            "type": "listening"
+        },
+        "version": "0.8.0"
+    },
+    "gpt": {
+        "contextual": {
+            "in_memory_timeframe": 600.0,
+            "max_ctx_per_user": 4,
+            "max_ctx_percentage": 0.6
+        },
+        "model": {
+            "advanced": "gpt-4-1106-preview",
+            "default": "gpt-3.5-turbo-1106",
+            "vision": "gpt-4-vision-preview",
+            "spec": [
+                {
+                    "max_token": 2048,
+                    "name": "gpt-3.5-turbo"
+                },
+                {
+                    "max_token": 16384,
+                    "name": "gpt-4-32k-0613"
+                },
+                {
+                    "max_token": 8192,
+                    "name": "gpt-3.5-turbo-1106"
+                },
+                {
+                    "max_token": 4096,
+                    "name": "gpt-4-1106-preview"
+                },
+                {
+                    "max_token": 4096,
+                    "name": "gpt-4-vision-preview"
+                }
+            ]
+        },
+        "response": {
+            "do_truncate": true,
+            "entry_truncation": 3980
+        },
+        "thinking_indicator": "小G捏造事实中...",
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_web_content",
+                    "description": "搜索网络内容获取简略结果",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "用于搜索的语句, 语言应和对话语言相同"
+                            },
+                            "market": {
+                                "type": "string",
+                                "description": "网络内容所在的区域",
+                                "enum": [
+                                    "zh-CN",
+                                    "en-US",
+                                    "en-GB"
+                                ]
+                            },
+                            "language": {
+                                "type": "string",
+                                "description": "搜索使用的语言, 应和对话语言相同",
+                                "enum": [
+                                    "zh-hans",
+                                    "en"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "query",
+                            "language",
+                            "market"
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "gpti": {
+        "dimension": {
+            "vert_long": "1024x1792",
+            "hori_long": "1792x1024",
+            "default": "1024x1024"
+        },
+        "model": {
+            "advanced": "dall-e-3",
+            "default": "dall-e-2"
+        },
+        "variation_max": 10,
+        "painting_completed": "小G乱画: ",
+        "painting_indicator": "小G胡乱作画中..."
+    },
+    "tts": {
+        "neural": {
+            "available": [
+                "Xiaoyi"
+            ],
+            "culture": "zh-CN",
+            "default": "Xiaoyi"
+        },
+        "nlp": {
+            "cache": "cache/speech.wav",
+            "external_rules": [
+                "rules/user_alias"
+            ],
+            "truncation": 256
+        },
+        "region": "eastus",
+        "reintroduce_interval": 30.0,
+        "routine_interval": 30.0
+    }
+}
