@@ -165,7 +165,7 @@ class TrioHandler(CogBase, commands.Cog):
 
     def write_cache(self, buffer: list, cache: str):
         buf = BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_LZMA) as z:
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             for i, image in enumerate(buffer):
                 if image is not None:
                     raw, seed = image
@@ -556,6 +556,9 @@ class TrioHandler(CogBase, commands.Cog):
             for i, response in enumerate(responses["jobs"]):
                 available = response["result"].get("available")
                 scheduled = response.get("scheduled")
+                if not available and not scheduled:
+                    collected[i] = None
+                    continue
                 if i not in collected.keys() and available and not scheduled:
                     display_task = None
                     image_url = response["result"].get("blobUrl")
@@ -580,8 +583,12 @@ class TrioHandler(CogBase, commands.Cog):
             await asyncio.sleep(1)
             elapsed += 1
 
+        collected = [c for c in collected if c is not None]
+
         if len(collected) > 0:
             completion_time = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        else:
+            raise Exception("Unable to schedule any job")
 
         artifact = TrioArtifact(
             ctx.author.name,
@@ -768,11 +775,12 @@ class TrioHandler(CogBase, commands.Cog):
             return
 
         new_model = TrioModel(trio_type, **details)
+        model_type = TrioModelType(new_model.model).name.upper()
         exist_model = [m for m in self.trio_models if m.urn == new_model.urn]
         if len(exist_model) != 0:
             await ref.edit(
                 embed=self.as_embed(
-                    f"A **`{TrioModelType(exist_model[0].model).name}`** "
+                    f"A **`{model_type}`** "
                     + f"model with same resource urn already exists\n```\n{exist_model[0].name}\n```",
                     ctx.author,
                 ),
@@ -787,13 +795,13 @@ class TrioHandler(CogBase, commands.Cog):
         thumbnail = version["images"][0]["url"]
         await ref.edit(
             embed=self.as_embed(
-                f"Added new **`{trio_type.upper()}`**, {new_model.name} @ `{version.name}`",
+                f"Added new **`{model_type}`**, {new_model.name} @ `{version.name}`",
                 ctx.author,
             ).set_image(url=thumbnail),
         )
         self.log(
             ctx.message,
-            f"trio add **{trio_type.upper()}**\n```\n{new_model.name} @ {version.name}\n```",
+            f"trio add **{model_type}**\n```\n{new_model.name} @ {version.name}\n```",
         )
 
     @commands.hybrid_command()
