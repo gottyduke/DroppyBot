@@ -1,7 +1,10 @@
-from shared import CogBase
-
+import asyncio
+from io import BytesIO
 import discord
 from discord.ext import commands
+import requests
+
+from shared import CogBase
 
 
 class GPTIHandler(CogBase, commands.Cog):
@@ -52,10 +55,17 @@ class GPTIHandler(CogBase, commands.Cog):
 
         self.help_info["GPTI"] = self.generate_help_info()
 
-    @commands.command()
+    @commands.hybrid_command()
+    @CogBase.failsafe(CogBase.config.gpti.painting_indicator)
     async def gpti(self, ctx: commands.Context, *, prompt: str):
+        """
+        GPTI
+        """
+
+        ref = await self.get_ctx_ref(ctx)
+
         embed = self.as_embed(self.config.gpti.painting_indicator, ctx.author)
-        message = await ctx.reply(embed=embed)
+        await ref.edit(embed=embed)
 
         # check for creation quantity
         tokenized_prompt = prompt.split(" ")
@@ -87,18 +97,30 @@ class GPTIHandler(CogBase, commands.Cog):
             )
         )
         embed.description = self.config.gpti.painting_completed
-        await message.edit(embed=embed)
+        await ref.edit(embed=embed)
 
         # if multi-creation
-        url = []
-        for res in responses.data:
-            await ctx.send(
-                embed=discord.Embed(color=ctx.author.color).set_image(url=res.url)
+        url = {}
+        for i, res in enumerate(responses.data):
+            image = requests.get(res.url).content
+            image_name = f"image_{i + 1}.jpg"
+            image_file = discord.File(
+                BytesIO(image),
+                image_name,
+                description=prompt,
             )
-            url.append(res.url)
+            display_task = asyncio.create_task(ctx.send(file=image_file, silent=True))
+            url[f"[{image_name}]"] = display_task
 
+        messages = await asyncio.gather(*url.values())
+        links = " ".join(
+            [
+                f"{l}({messages[i].attachments[0].proxy_url})"
+                for i, l in enumerate(url.keys())
+            ]
+        )
         if not self.private_query:
-            self.log(ctx.message, f"gpti x{quantity}\n```{prompt}```{url}")
+            self.log(ctx.message, f"gpti x{quantity}\n```\n{prompt}\n```\n{links}")
 
     @commands.command()
     async def gptip(self, ctx: commands.Context, *, prompt):

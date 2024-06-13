@@ -1,10 +1,10 @@
 import json
 import os
+
 import requests
-
-from shared import CogBase, cwd
-
 from discord.ext import commands
+
+from shared import CogBase
 
 
 class GPTTools(CogBase, commands.Cog):
@@ -39,8 +39,5 @@ class GPTTools(CogBase, commands.Cog):
             {"name": webpage["name"], "snippet": webpage["snippet"]}
             for webpage in response.json()["webPages"]["value"]
         ]
-
-        print(arguments)
-        print(filtered_result)
 
         return filtered_result

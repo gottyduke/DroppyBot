@@ -1,12 +1,15 @@
+import asyncio
 import os
 
 import discord
-import shared
 from discord.ext import commands
 
+import shared
 from util.config import load_config
 from util.logger import setup_logger
 
+# sneaky
+shared.CogBase.sneaky_mode = False
 
 # bot instance
 intents = discord.Intents.default()
@@ -22,7 +25,7 @@ intents.voice_states = True
 bot = commands.Bot("!", intents=intents)
 
 # dev flag
-enabled_module = {"gpt": True, "telemetry": False}
+enabled_module = {"gpt": True, "trio": True}
 
 
 async def scan_and_load():
@@ -49,13 +52,19 @@ async def update_presence(activity=None):
     """
 
     activity = activity or discord.Activity(
-        type=discord.ActivityType[shared.CogBase.config.bot.presense.type],
-        name=shared.CogBase.config.bot.presense.name,
-        details=shared.CogBase.config.bot.presense.details,
+        type=discord.ActivityType[shared.CogBase.config.bot.presence.type],
+        name=shared.CogBase.config.bot.presence.name,
+        details=shared.CogBase.config.bot.presence.details,
     )
     print(f"updating presence: {activity.type.name} {activity.name} {activity.details}")
 
-    return await shared.CogBase.bot.change_presence(activity=activity)
+    status = (
+        discord.Status.invisible
+        if shared.CogBase.sneaky_mode
+        else discord.Status.online
+    )
+
+    return await shared.CogBase.bot.change_presence(activity=activity, status=status)
 
 
 # initializer
@@ -67,12 +76,22 @@ async def on_ready():
     config = load_config()
     print(f"runtime version: {config.bot.version}")
 
-    await setup_logger(bot)
-    await scan_and_load()
-    await update_presence()
-
     # command prefix
     bot.command_prefix = config.bot.command_prefix
+
+    # stats
+    for guild in bot.guilds:
+        print(f"serving {guild.name}")
+
+    # init
+    init_tasks = [
+        setup_logger(bot, shared.CogBase.sneaky_mode),
+        scan_and_load(),
+        bot.tree.sync(),
+        update_presence(),
+    ]
+    init_tasks = [asyncio.create_task(t) for t in init_tasks]
+    await asyncio.gather(*init_tasks)
 
     # finalize
     shared.CogBase.bot_ready = True
@@ -92,17 +111,17 @@ async def help(ctx: commands.Context, *, payload=None):
         ):
             return await ctx.reply(embeds=shared.CogBase.help_info[payload])
 
-    catagories = discord.Embed(title="请使用以下命令查看详细类别:")
-    catagories.description = ""
-    for cata in shared.CogBase.help_info:
-        catagories.description += f"- `{bot.command_prefix}help {cata}`\n"
-    catagories.set_thumbnail(url=bot.user.display_avatar.url)
+    categories = discord.Embed(title="请使用以下命令查看详细类别:")
+    categories.description = ""
+    for cate in shared.CogBase.help_info:
+        categories.description += f"- `{bot.command_prefix}help {cate}`\n"
+    categories.set_thumbnail(url=bot.user.display_avatar.url)
     img = f"https://raster.shields.io/badge/Droppy%20Bot-{shared.CogBase.config.bot.version}-green.png?style=for-the-badge&logo=github"
-    catagories.set_image(url=img)
+    categories.set_image(url=img)
     src = "https://github.com/gottyduke"
-    catagories.description += f"\n[机器人黑奴供应者: DK]({src})"
+    categories.description += f"\n[机器人黑奴供应者: DK]({src})"
 
-    await ctx.reply(embed=catagories)
+    await ctx.reply(embed=categories)
 
 
 # online!

@@ -1,13 +1,11 @@
-import datetime
 import json
 import os
-
-from shared import CogBase, cwd
-from modules.gpt.tools import GPTTools
+import time
 
 import discord
 from discord.ext import commands
-from prodict import Prodict
+
+from shared import CogBase, cwd
 
 
 class GPTHandler(CogBase, commands.Cog):
@@ -19,11 +17,21 @@ class GPTHandler(CogBase, commands.Cog):
                 description="""
             使用chatGPT进行文字生成, powered by OpenAI
 
-            可附加有上限的上下文, 模拟连续对话
+            可附加有上限的上下文, 模拟连续对话(参考使用方法)
 
-            已提供`gpt-3.5-turbo-1106`或`gpt-4-1106-preview`模型
+            已提供`gpt-4-turbo`或`gpt-4o`**(新!)**模型
 
-            *2023/12/18 更新:*
+            *2024/05/16 更新:*
+            + 移除了`gpt-3.5-turbo`, 现有的`!gpt`命令将会指向`gpt-4-turbo`
+            + 添加了`gpt-4o`模型, 现有的`!gpt4`命令将会指向它
+
+            2024/04/06 更新:*
+            + 训练数据已更新至2023年12月份
+
+            2024/03/24 更新:
+            + gpt模型`1106`->`0125`
+
+            2023/12/18 更新:
             + 已支持联网搜索, 结果基于互联网查找
 
             2023/11/19 更新:
@@ -31,22 +39,21 @@ class GPTHandler(CogBase, commands.Cog):
             + 支持长文本输入/输出(参考使用方法)
             + 支持图片识别/图片辅助的文字生成(参考使用方法)
             """,
-            )
-        ]
-        help_info.append(
+            ),
             discord.Embed(
                 color=discord.Color.blurple(),
                 title="如何选择不同的模型?",
                 description=f"""
-            本机器人🔧接入了OpenAI API, 自3月27日也获得了gpt-4模型API的内测资格, 因此提供gpt-3.5-turbo和gpt-4两种模型
+            本机器人🔧接入了OpenAI API, 自3月27日也获得了gpt-4模型API的内测资格, ~~因此提供gpt-3.5-turbo和gpt-4两种模型~~
 
-            其中`gpt-3.5-turbo`是OpenAI默认chatGPT模型, 而`gpt-4`则是其之后的高级付费模型, 语言能力和逻辑思维得到了很大的加强
+            ~~其中`gpt-3.5-turbo`是OpenAI默认chatGPT模型, 而`gpt-4`则是其之后的高级付费模型, 语言能力和逻辑思维得到了很大的加强~~
 
-            两GPT模型的使用**没有**网页端的每小时条数限制. 但是, 作为一个计费制的API, 在整活类问题/逻辑需求不强的使用场景下请调用`gpt-3.5-turbo`模型, 正常使用时则调用`gpt-4`模型
+            ~~两GPT模型的使用**没有**网页端的每小时条数限制. 但是, 作为一个计费制的API, 在整活类问题/逻辑需求不强的使用场景下请调用`gpt-3.5-turbo`模型, 正常使用时则调用`gpt-4`模型~~
+
+            现已移除`gpt-3.5-turbo`, 默认设置为`gpt-4-turbo`, 高级模型为`gpt-4o`, 尽情使用吧!
+
             """,
-            )
-        )
-        help_info.append(
+            ),
             discord.Embed(
                 color=discord.Color.blurple(),
                 title="命令指南及其示例:",
@@ -71,37 +78,42 @@ class GPTHandler(CogBase, commands.Cog):
             ```
 {self.compiled_gpt4_cmd} "命里有时终须有，命里无时莫强求"这句话用俄语如何翻译? 要求尽量信达雅, 并逐句附加中俄双语对照和解释```
             """,
-            )
-        )
-        help_info.append(
+            ),
+            discord.Embed(
+                color=discord.Color.blurple(),
+                title="附加上下文进行连续对话",
+                description=f"""
+            每次使用`!gpt`/`!gpt4`命令时, 这便开启了一个**新的对话**.
+
+            若要跟随此对话上下文进行连续对话, 请右键该🤖的回答, 选择回复即可.
+
+            当跟随上下文继续对话时, **不需要再次使用**`!gpt`/`!gpt4`命令, 请直接输入你的文字.
+            """,
+            ).set_image(url="https://i.postimg.cc/j5SxZLrL/reply.png"),
             discord.Embed(
                 color=discord.Color.blurple(),
                 title="关于GPT设定语句",
                 description=f"""
             GPT设定语句是每次对话时各用户专属的前置设定, 又称为调教, 咒语等
-            
+
             例如, 使GPT扮演一个猫娘:
             ```
 {self.compiled_gptinit_cmd} 你将扮演一个猫娘, 称呼我为主人, 开头和结尾都要使用喵语气和可爱风格```
-            
+
             若要清空GPT设定语句, 则使用不加文字的`{self.compiled_gptinit_cmd}`命令
             """,
-            )
-        )
-        help_info.append(
+            ),
             discord.Embed(
                 color=discord.Color.blurple(),
                 title="附加文件用于文字生成",
                 description=f"""
             使用GPT命令时, 将文件拖拽至输入栏即可附加此文件用于下次文字生成
 
-            机器人未支持如`.docx`, `.pdf`等格式的自动转换, 文档类文件请自行转换为纯文本格式(`.txt`), 代码类文件可直接附加 
-            
+            机器人未支持如`.docx`, `.pdf`等格式的自动转换, 文档类文件请自行转换为纯文本格式(`.txt`), 代码类文件可直接附加
+
             可一次附加多个文件
             """,
-            ).set_image(url="https://i.postimg.cc/cLqK5yXp/1.png")
-        )
-        help_info.append(
+            ).set_image(url="https://i.postimg.cc/cLqK5yXp/1.png"),
             discord.Embed(
                 color=discord.Color.blurple(),
                 title="附加图片进行图片识别/辅助生成",
@@ -112,12 +124,13 @@ class GPTHandler(CogBase, commands.Cog):
 
             可一次附加多个文件
             """,
-            ).set_image(url="https://i.postimg.cc/wxPqbL9t/2.png")
-        )
+            ).set_image(url="https://i.postimg.cc/wxPqbL9t/2.png"),
+        ]
 
         return help_info
 
     def __init__(self):
+        self.internal_latency = None
         self.active_model = self.config.gpt.model.default
         self.max_token = next(
             model
@@ -140,13 +153,13 @@ class GPTHandler(CogBase, commands.Cog):
 
     def load_user_init(self):
         user_init = {}
-        user_init_path = os.path.join(cwd, "rules/user_init.json")
+        user_init_path = os.path.join(cwd, self.config.gpt.user_init_path)
         if os.path.exists(user_init_path):
             try:
                 with open(user_init_path, "rb") as f:
                     for user, init in json.load(f).items():
                         user_init[int(user)] = str(init)
-            except json.JSONDecodeError:
+            except Exception:
                 user_init = {}
 
         return user_init
@@ -156,9 +169,9 @@ class GPTHandler(CogBase, commands.Cog):
             if init is None or init == "" or init.isspace():
                 del self.user_init[user]
 
-        user_init_path = os.path.join(cwd, "rules/user_init.json")
+        user_init_path = os.path.join(cwd, self.config.gpt.user_init_path)
         with open(user_init_path, "w", encoding="utf-8") as f:
-            json.dump(self.user_init, f, indent=4, sort_keys=True, ensure_ascii=False)
+            json.dump(self.user_init, f, indent=4, ensure_ascii=False)
 
     async def retrieve_conversation(self, msg: discord.Message):
         """
@@ -167,14 +180,15 @@ class GPTHandler(CogBase, commands.Cog):
         """
 
         prompts = []
+        valid_gpt = False
         # check if user replied to a gpt response for a "contextual conversation"
         ref = msg.reference
         if ref is None or ref.resolved is None:
-            return prompts
+            return None
 
         answer = ref.resolved
         if answer.author != self.bot.user:
-            return prompts
+            return None
 
         retrieval = self.config.gpt.contextual.max_ctx_per_user
         while retrieval > 0:
@@ -197,12 +211,15 @@ class GPTHandler(CogBase, commands.Cog):
             prompt = question.content
             prompts.append({"role": "user", "content": prompt})
 
+            if self.compiled_gpt_cmd in prompt:
+                valid_gpt = True
+
             if question.reference is None or question.reference.message_id is None:
                 break
             answer = await msg.channel.fetch_message(question.reference.message_id)
 
             retrieval -= 1
-        return prompts
+        return prompts if valid_gpt else None
 
     def format_response(self, response: str):
         if response is None:
@@ -215,17 +232,19 @@ class GPTHandler(CogBase, commands.Cog):
         ):
             return [response]
 
-        # starts with atleast 1 entry
+        # starts with at least 1 entry
         formatted.append(
             f"*---此回复超出消息字数限制({len(response)}/{self.config.gpt.response.entry_truncation}), 已分段发送---*\n\n"
         )
         accum = 0
         code_block = False
+        code_block_syntax = ""
         for line in response.splitlines():
             accum += len(line)
             # preserve code block
             if "```" in line:
                 code_block = not code_block
+                code_block_syntax = line
             # close this response chunk
             if accum >= self.config.gpt.response.entry_truncation:
                 if code_block:
@@ -235,7 +254,8 @@ class GPTHandler(CogBase, commands.Cog):
                 formatted.append("")
 
                 if code_block:
-                    formatted[-1] += "```\n"
+                    formatted[-1] += code_block_syntax
+                    formatted[-1] += "\n"
                 accum = 0
 
             formatted[-1] += f"{line}\n"
@@ -258,15 +278,18 @@ class GPTHandler(CogBase, commands.Cog):
         completion = self.endpoint.chat.completions.create(
             model=self.active_model,
             messages=requests,
-            max_tokens=4096,
             tools=self.config.gpt.tools,
         )
+
         tele_prompt_token += completion.usage.prompt_tokens - len(prompt)
         tele_res_token += completion.usage.completion_tokens
 
         # if tools are called
-        if len(completion.choices[0].message.tool_calls) != 0:
-            tools: GPTTools = self.bot.get_cog("GPTTools")
+        if (
+            completion.choices[0].message.tool_calls is not None
+            and len(completion.choices[0].message.tool_calls) != 0
+        ):
+            tools = self.bot.get_cog("GPTTools")
             if tools is not None:
                 tool_response = tools.process_tool_call(
                     completion.choices[0].message.tool_calls[0]
@@ -288,10 +311,15 @@ class GPTHandler(CogBase, commands.Cog):
 
             # if tool call failed, fall back to default completion, otherwise commit
             completion = self.endpoint.chat.completions.create(
-                model=self.active_model, messages=requests, max_tokens=4096
+                model=self.active_model, messages=requests
             )
+
             tele_prompt_token += completion.usage.prompt_tokens - len(prompt)
             tele_res_token += completion.usage.completion_tokens
+
+        # get perf latency
+        latency = time.perf_counter() - self.internal_latency
+        latency = int(round(latency * 1000))
 
         # respond to user
         response = self.format_response(completion.choices[0].message.content)
@@ -306,23 +334,29 @@ class GPTHandler(CogBase, commands.Cog):
                 self.user_ctx[aid].append((msg, reply))
 
         if not self.private_query:
+            context = f"({completion.usage.prompt_tokens - len(prompt)})+{len(prompt)}"
+            completion_token = completion.usage.completion_tokens
+            tally = completion.usage.total_tokens
+            telemetry = f"[{context}+{completion_token}={tally}]({reply.jump_url})"
             self.log(
                 msg,
-                f"{self.active_model} [({completion.usage.prompt_tokens - len(prompt)})+{len(prompt)}+{completion.usage.completion_tokens}={completion.usage.total_tokens}]({reply.jump_url})\n```{prompt}```",
+                f"{self.active_model} {telemetry} {latency}ms\n```{prompt}```",
             )
 
-    @commands.command()
+    @commands.hybrid_command()
+    @CogBase.failsafe(CogBase.config.gpt.thinking_indicator)
     async def gpt(self, ctx: commands.Context, *, prompt):
         """
-        prepare requests and file inputs/long text
+        Prepare requests and file inputs/long text for GPT
         """
 
-        if await self.prepass(ctx.message) is None:
-            return
+        ref = await self.get_ctx_ref(ctx)
+
+        self.internal_latency = time.perf_counter()
 
         # placeholder
         embed = self.as_embed(self.config.gpt.thinking_indicator, ctx.author)
-        reply = await ctx.reply(embed=embed)
+        reply = await ref.edit(embed=embed)
 
         # calc max tokens allowed for contextual gpt
         aid = ctx.author.id
@@ -359,19 +393,17 @@ class GPTHandler(CogBase, commands.Cog):
                     self.user_ctx[aid].remove((history, answer))
 
         # append file inputs
-        vision_prompts = [{"type": "text", "text": prompt}]
         if len(ctx.message.attachments) >= 1:
             for file in ctx.message.attachments:
-                # if vision assist is requested, switch to gpt-4-vision model
                 if file.content_type.startswith("image"):
-                    self.active_model = self.config.gpt.model.vision
-                    self.max_token = next(
-                        model
-                        for model in self.config.gpt.model.spec
-                        if model["name"] == self.active_model
-                    )["max_token"]
-                    vision_prompts.append(
-                        {"type": "image_url", "image_url": file.proxy_url}
+                    prompts.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": file.proxy_url,
+                                "detail": self.config.gpt.model.vision_fidelity,
+                            },
+                        }
                     )
                 if file.content_type.startswith("text"):
                     prompts.append(
@@ -380,16 +412,13 @@ class GPTHandler(CogBase, commands.Cog):
                             "content": f"{file.filename}:\n```{(await file.read()).decode('utf-8')}```",
                         }
                     )
-        if self.active_model == self.config.gpt.model.vision:
-            prompts.append({"role": "user", "content": vision_prompts})
-        else:
-            prompts.append({"role": "user", "content": prompt})
+        prompts.append({"role": "user", "content": prompt})
 
         # request for chat completion
-        await self.request_and_reply(prompt, prompts, ctx.message, reply)
+        await self.request_and_reply(prompt, prompts, ctx.message, ref)
         self.active_model = self.config.gpt.model.default
 
-    @commands.command()
+    @commands.hybrid_command()
     async def gpt4(self, ctx: commands.Context, *, prompt):
         spec = str(self.active_model)
         self.active_model = self.config.gpt.model.advanced
@@ -402,10 +431,14 @@ class GPTHandler(CogBase, commands.Cog):
         await self.gpt4(ctx, prompt=prompt)
         self.private_query = False
 
-    @commands.command()
+    @commands.hybrid_command()
+    @CogBase.failsafe()
     async def gptinit(self, ctx: commands.Context, *, init=None):
-        if await self.prepass(ctx.message) is None:
-            return
+        """
+        Set startup prompt for your own
+        """
+
+        ref = await self.get_ctx_ref(ctx)
 
         aid = ctx.author.id
         original = ""
@@ -413,8 +446,10 @@ class GPTHandler(CogBase, commands.Cog):
             original = f"\n```{self.user_init[aid]}```->"
         self.user_init[aid] = init
 
-        await ctx.reply(
-            embed=self.as_embed(f"您的GPT设定已更改!{original}\n```{init}```", ctx.author)
+        await ref.edit(
+            embed=self.as_embed(
+                f"您的GPT设定已更改!{original}\n```{init}```", ctx.author
+            )
         )
         self.log(
             ctx.message,
@@ -422,19 +457,28 @@ class GPTHandler(CogBase, commands.Cog):
         )
         self.save_user_init()
 
-    async def build_contextual(self, msg: discord.Message):
+    async def build_contextual(self, ctx: discord.Message):
         # check if the replied message is also a replied message a.k.a a gpt response
         prompts = []
-        prompt = msg.content
+        prompt = ctx.content
         prompts.append({"role": "user", "content": prompt})
-        prompts += await self.retrieve_conversation(msg)
+
+        conversation = await self.retrieve_conversation(ctx)
+        if conversation is None:
+            return
+
+        # replies from other commands
+        if len(conversation) <= 1:
+            return
+
+        prompts += conversation
 
         # placeholder
-        embed = self.as_embed(self.config.gpt.thinking_indicator, msg.author)
-        reply = await msg.reply(embed=embed)
+        embed = self.as_embed(self.config.gpt.thinking_indicator, ctx.author)
+        reply = await ctx.reply(embed=embed)
 
         # prepend system init, for RP purpose or preset guidelines
-        aid = msg.author.id
+        aid = ctx.author.id
         if aid in self.user_init and self.user_init[aid] is not None:
             prompts.append({"role": "system", "content": self.user_init[aid]})
 
@@ -442,16 +486,16 @@ class GPTHandler(CogBase, commands.Cog):
         prompts.reverse()
         spec = str(self.active_model)
         self.active_model = self.config.gpt.model.advanced
-        await self.request_and_reply(prompt, prompts, msg, reply)
+        await self.request_and_reply(prompt, prompts, ctx, reply)
         self.active_model = spec
 
     # listen for inputs
     @commands.Cog.listener()
-    async def on_message(self, msg: discord.Message):
-        if await self.prepass(msg) is None:
+    async def on_message(self, ctx: discord.Message):
+        if await self.prepass(ctx) is None:
             return
 
-        ref = msg.reference
+        ref = ctx.reference
         if ref is None or ref.resolved is None:
             return
 
@@ -459,4 +503,5 @@ class GPTHandler(CogBase, commands.Cog):
         if ref.resolved.author != self.bot.user:
             return
 
-        await self.build_contextual(msg)
+        self.internal_latency = time.perf_counter()
+        await self.build_contextual(ctx)

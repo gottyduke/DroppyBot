@@ -2,11 +2,11 @@ import datetime
 import enum
 import os
 import queue
-import requests
 import socket
 import time
 
 import discord
+import requests
 from discord.ext import commands, tasks
 
 
@@ -109,12 +109,17 @@ class Logger:
 logger: Logger = None
 
 
-async def setup_logger(bot):
+async def setup_logger(bot, sneaky=False):
     global logger
 
     logger = Logger(bot)
-    await logger.report_success()
+    if not sneaky:
+        await logger.report_success()
 
 
 def log(msg: str):
     logger.log(msg)
+
+
+def error(msg: str):
+    logger.log(msg, logger.LogLevel.ERROR)
