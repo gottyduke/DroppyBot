@@ -1,10 +1,10 @@
+import asyncio
+import discord
 import json
 import os
 import time
 
-import discord
 from discord.ext import commands
-
 from shared import CogBase, cwd
 
 
@@ -234,7 +234,8 @@ class GPTHandler(CogBase, commands.Cog):
         tele_res_token = 0
 
         # request for chat completion
-        completion = self.endpoint.chat.completions.create(
+        completion = await asyncio.to_thread(
+            self.endpoint.chat.completions.create,
             model=self.active_model,
             messages=requests,
             tools=self.config.gpt.tools,
@@ -269,8 +270,10 @@ class GPTHandler(CogBase, commands.Cog):
                 )
 
             # if tool call failed, fall back to default completion, otherwise commit
-            completion = self.endpoint.chat.completions.create(
-                model=self.active_model, messages=requests
+            completion = await asyncio.to_thread(
+                self.endpoint.chat.completions.create,
+                model=self.active_model,
+                messages=requests,
             )
 
             tele_prompt_token += completion.usage.prompt_tokens - len(prompt)
@@ -306,7 +309,7 @@ class GPTHandler(CogBase, commands.Cog):
     @CogBase.failsafe(CogBase.config.gpt.thinking_indicator)
     async def gpt(self, ctx: commands.Context, *, prompt):
         """
-        Prepare requests and file inputs/long text for GPT
+        gpt-4-turbo, 128k
         """
 
         ref = await self.get_ctx_ref(ctx)
@@ -315,7 +318,7 @@ class GPTHandler(CogBase, commands.Cog):
 
         # placeholder
         embed = self.as_embed(self.config.gpt.thinking_indicator, ctx.author)
-        reply = await ref.edit(embed=embed)
+        await ref.edit(embed=embed)
 
         # calc max tokens allowed for contextual gpt
         aid = ctx.author.id
@@ -379,6 +382,10 @@ class GPTHandler(CogBase, commands.Cog):
 
     @commands.hybrid_command()
     async def gpt4(self, ctx: commands.Context, *, prompt):
+        """
+        gpt-4o, 128k
+        """
+
         spec = str(self.active_model)
         self.active_model = self.config.gpt.model.advanced
         await self.gpt(ctx, prompt=prompt)

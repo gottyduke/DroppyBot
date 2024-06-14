@@ -1,12 +1,12 @@
 import asyncio
-import os
-
 import discord
+import os
+import shared
+
+from common.config import load_config
+from common.logger import setup_logger
 from discord.ext import commands
 
-import shared
-from util.config import load_config
-from util.logger import setup_logger, logger
 
 # sneaky
 shared.CogBase.sneaky_mode = False
@@ -92,7 +92,6 @@ async def on_ready():
     ]
     init_tasks = [asyncio.create_task(t) for t in init_tasks]
     await asyncio.gather(*init_tasks)
-    logger.log_interval = shared.CogBase.config.bot.log.session_interval
 
     # finalize
     shared.CogBase.bot_ready = True

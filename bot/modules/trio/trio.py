@@ -1,6 +1,5 @@
 import asyncio
 import civitai.models
-from datetime import datetime, timedelta, UTC
 import discord
 import json
 import os
@@ -9,15 +8,15 @@ import requests
 import zipfile
 
 from PIL import Image
-from io import BytesIO
+from datetime import datetime, timedelta, UTC
 from discord.ext import commands
-from prodict import Prodict
-
-from shared import CogBase, cwd
+from io import BytesIO
+from modules.trio.artifact import TrioArtifact
 from modules.trio.model import TrioModel, TrioModelType
 from modules.trio.template import TrioTemplate
-from modules.trio.artifact import TrioArtifact
 from modules.trio.trioview import TrioControlView, TrioJobView
+from prodict import Prodict
+from shared import CogBase, cwd
 
 
 class TrioHandler(CogBase, commands.Cog):
@@ -556,9 +555,6 @@ class TrioHandler(CogBase, commands.Cog):
             for i, response in enumerate(responses["jobs"]):
                 available = response["result"].get("available")
                 scheduled = response.get("scheduled")
-                if not available and not scheduled:
-                    collected[i] = None
-                    continue
                 if i not in collected.keys() and available and not scheduled:
                     display_task = None
                     image_url = response["result"].get("blobUrl")
@@ -583,25 +579,25 @@ class TrioHandler(CogBase, commands.Cog):
             await asyncio.sleep(1)
             elapsed += 1
 
-        collected = [c for c in collected if c is not None]
+        collected = [c for _, c in collected.items() if c is not None]
 
         if len(collected) > 0:
-            completion_time = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
-        else:
             raise Exception("Unable to schedule any job")
+
+        completion_time = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
         artifact = TrioArtifact(
             ctx.author.name,
             completion_time,
             input_model,
             completion_time,
-            [s[1] for s in collected.values() if s is not None],
+            [s[1] for s in collected if s is not None],
         )
 
         self.user_artifacts.append(artifact)
         self.save_user_artifacts()
         if not temp:
-            self.write_cache(collected.values(), artifact.cache)
+            self.write_cache(collected, artifact.cache)
 
         await asyncio.gather(*display_tasks)
         return completion_time

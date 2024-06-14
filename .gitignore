@@ -24,3 +24,5 @@ bot/modules/tts/
 
 # no local trio caches
 bot/rules/trio_*.json
+sync_ftp.bat
+WinSCP.log

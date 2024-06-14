@@ -8,7 +8,7 @@ from discord.ext import commands
 from functools import wraps
 from openai import OpenAI
 from prodict import Prodict
-import util.logger
+import common.logger
 
 
 try:
@@ -81,7 +81,7 @@ class CogBase:
         stack = traceback.format_exception(type(e), e, e.__traceback__)
         header = type(e).__name__
         full = "".join(stack)
-        util.logger.error(f"**{header}**\n```\n{full}\n```")
+        common.logger.error(f"**{header}**\n```\n{full}\n```")
 
         if header_override is None:
             header_override = header
@@ -134,7 +134,7 @@ class CogBase:
         """
 
         if footer_append is None:
-            footer_append = f"使用 {CogBase.bot.command_prefix}help 命令来查看新功能! 更新日期: 2024/06/13*"
+            footer_append = f"updated: 2024/06/13*"
 
         if color_owner is not None and color_owner.color != discord.Color.default():
             color = color_owner.color
@@ -173,7 +173,7 @@ class CogBase:
             )
 
         # log format
-        util.logger.log(f" **__[[{channel}]]__** {author.name} >> {entry}")
+        common.logger.log(f" **__[[{channel}]]__** {author.name} >> {entry}")
 
     @staticmethod
     def failsafe(thinking_indicator: str | None = None, force_ephemeral: bool = False):

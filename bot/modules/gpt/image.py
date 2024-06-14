@@ -1,9 +1,9 @@
 import asyncio
-from io import BytesIO
 import discord
-from discord.ext import commands
 import requests
 
+from discord.ext import commands
+from io import BytesIO
 from shared import CogBase
 
 
@@ -59,7 +59,7 @@ class GPTIHandler(CogBase, commands.Cog):
     @CogBase.failsafe(CogBase.config.gpti.painting_indicator)
     async def gpti(self, ctx: commands.Context, *, prompt: str):
         """
-        GPTI
+        dalle-3
         """
 
         ref = await self.get_ctx_ref(ctx)
@@ -80,23 +80,27 @@ class GPTIHandler(CogBase, commands.Cog):
             prompt = " ".join(tokenized_prompt[1:])
 
         # image creation
-        responses = (
-            self.endpoint.images.generate(
-                model=self.config.gpti.model.advanced,
-                prompt=prompt,
-                size=self.config.gpti.dimension.default,
-                quality="hd",
-                n=quantity,
-            )
-            if quantity == 1
-            else self.endpoint.images.generate(
-                model=self.config.gpti.model.default,
-                prompt=prompt,
-                size=self.config.gpti.dimension.default,
-                n=quantity,
-            )
+        input_model = {
+            "prompt": prompt,
+            "size": self.config.gpti.dimension.default,
+            "n": quantity,
+        }
+        if quantity == 1:
+            input_model["model"] = self.config.gpti.model.advanced
+            input_model["quality"] = self.config.gpti.quality.hd
+        else:
+            input_model["model"] = self.config.gpti.model.default
+
+        responses = await asyncio.to_thread(
+            self.endpoint.images.generate, **input_model
         )
         embed.description = self.config.gpti.painting_completed
+        revised = (
+            responses.data[0].revised_prompt
+            if responses.data[0].revised_prompt is not None
+            else prompt
+        )
+        embed.add_field(name="Prompt", value=f"```\n{revised}\n```")
         await ref.edit(embed=embed)
 
         # if multi-creation

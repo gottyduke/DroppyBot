@@ -1,8 +1,7 @@
 import os
+import shared as shared
 
 from openai import OpenAI
-
-import shared as shared
 from modules.gpt.chat import GPTHandler
 from modules.gpt.image import GPTIHandler
 from modules.gpt.tools import GPTTools

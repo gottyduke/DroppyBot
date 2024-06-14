@@ -93,6 +93,10 @@
       "advanced": "dall-e-3",
       "default": "dall-e-2"
     },
+    "quality": {
+      "standard": "standard",
+      "hd": "hd"
+    },
     "variation_max": 10,
     "painting_completed": "小G乱画: ",
     "painting_indicator": "小G胡乱作画中..."
@@ -125,7 +129,7 @@
       "max": 60,
       "default": 60
     },
-    "concurrent_job_max": 8,
+    "concurrent_job_max": 4,
     "concurrent_timeout": 300,
     "generating_indicator": "making arts you like...",
     "remixing_indicator": "remixing with similar seed...",

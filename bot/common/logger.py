@@ -47,13 +47,15 @@ class Logger:
         msg = f"*SESSION [{datetime.datetime.fromtimestamp(int(self.session_start)).strftime('%Y/%m/%d %H:%M:%S')} - "
         msg += f"{datetime.datetime.fromtimestamp(int(self.session_end)).strftime('%H:%M:%S')}]* "
         msg += f">>> **`{len(self.logpool.queue)}`** commands executed\n"
-        await self.saved_channel.send(msg)
+        await self.saved_channel.send(msg, silent=True)
 
         while not self.logpool.empty():
-            log = self.logpool.get()
-            if log is None:
+            log_entry, level = self.logpool.get()
+            if log_entry is None:
                 break
-            await self.saved_channel.send(log)
+            if level == self.LogLevel.ERROR:
+                log_entry += f"\n<@{os.environ['DEV_ID']}>"
+            await self.saved_channel.send(log_entry, silent=level != self.LogLevel.ERROR)
 
         self.session_start = None
         self.session_end = None
@@ -82,7 +84,7 @@ class Logger:
             self.session_start = time.time()
 
         msg = f"{datetime.datetime.now().strftime('%H:%M:%S')} **{level.name}** {msg}"
-        self.logpool.put(msg)
+        self.logpool.put((msg, level))
 
         print(self.normalized_console_output(msg, level))
 
@@ -91,7 +93,6 @@ class Logger:
     async def report_success(self):
         login_info = (
             f"```\ntime : {datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
-            f"name : {socket.gethostname()}\n"
             f"fqdn : {socket.getfqdn()}\n"
             f"ipv4 : {socket.gethostbyname(socket.gethostname())}\n"
             f"addr : {requests.get('https://api.ipify.org').text}\n```"

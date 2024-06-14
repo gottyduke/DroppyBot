@@ -1,9 +1,8 @@
 import json
 import os
-
 import requests
-from discord.ext import commands
 
+from discord.ext import commands
 from shared import CogBase
 
 
