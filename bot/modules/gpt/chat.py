@@ -221,47 +221,6 @@ class GPTHandler(CogBase, commands.Cog):
             retrieval -= 1
         return prompts if valid_gpt else None
 
-    def format_response(self, response: str):
-        if response is None:
-            return [""]
-
-        formatted = []
-        if (
-            not self.config.gpt.response.do_truncate
-            or len(response) < self.config.gpt.response.entry_truncation
-        ):
-            return [response]
-
-        # starts with at least 1 entry
-        formatted.append(
-            f"*---此回复超出消息字数限制({len(response)}/{self.config.gpt.response.entry_truncation}), 已分段发送---*\n\n"
-        )
-        accum = 0
-        code_block = False
-        code_block_syntax = ""
-        for line in response.splitlines():
-            accum += len(line)
-            # preserve code block
-            if "```" in line:
-                code_block = not code_block
-                code_block_syntax = line
-            # close this response chunk
-            if accum >= self.config.gpt.response.entry_truncation:
-                if code_block:
-                    formatted[-1] += "```"
-
-                # begins new chunk
-                formatted.append("")
-
-                if code_block:
-                    formatted[-1] += code_block_syntax
-                    formatted[-1] += "\n"
-                accum = 0
-
-            formatted[-1] += f"{line}\n"
-
-        return formatted
-
     async def request_and_reply(
         self, prompt, requests, msg: discord.Message, reply: discord.Message
     ):

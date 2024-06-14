@@ -35,6 +35,48 @@ class CogBase:
     ctx_refs = {}
 
     @staticmethod
+    def format_response(response: str):
+        if response is None:
+            return [""]
+
+        formatted = []
+        if (
+            not CogBase.config.gpt.response.do_truncate
+            or len(response) < CogBase.config.gpt.response.entry_truncation
+        ):
+            return [response]
+
+        # starts with at least 1 entry
+        formatted.append(
+            f"*---此回复超出消息字数限制({len(response)}/{CogBase.config.gpt.response.entry_truncation}), 已分段发送---*\n\n"
+        )
+        accum = 0
+        code_block = False
+        code_block_syntax = ""
+        for line in response.splitlines():
+            accum += len(line)
+            # preserve code block
+            if "```" in line:
+                code_block = not code_block
+                code_block_syntax = line
+            # close this response chunk
+            if accum >= CogBase.config.gpt.response.entry_truncation:
+                if code_block:
+                    formatted[-1] += "```"
+
+                # begins new chunk
+                formatted.append("")
+
+                if code_block:
+                    formatted[-1] += code_block_syntax
+                    formatted[-1] += "\n"
+                accum = 0
+
+            formatted[-1] += f"{line}\n"
+
+        return formatted
+
+    @staticmethod
     def get_fail_embed(e: Exception, header_override: str | None = None):
         stack = traceback.format_exception(type(e), e, e.__traceback__)
         header = type(e).__name__

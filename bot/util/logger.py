@@ -47,14 +47,14 @@ class Logger:
         msg = f"*SESSION [{datetime.datetime.fromtimestamp(int(self.session_start)).strftime('%Y/%m/%d %H:%M:%S')} - "
         msg += f"{datetime.datetime.fromtimestamp(int(self.session_end)).strftime('%H:%M:%S')}]* "
         msg += f">>> **`{len(self.logpool.queue)}`** commands executed\n"
+        await self.saved_channel.send(msg)
 
         while not self.logpool.empty():
             log = self.logpool.get()
             if log is None:
                 break
-            msg += f"- {log}\n"
+            await self.saved_channel.send(log)
 
-        await self.saved_channel.send(msg)
         self.session_start = None
         self.session_end = None
 
