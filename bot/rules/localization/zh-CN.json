@@ -1,0 +1,5 @@
+{
+    "allocation_limited": "(╯°□°)╯︵ ┻━┻\n您的 {0} 配额已耗尽, {1} 每 {2} 日\n重置于: {3} 日",
+    "bot_fallback_indicator": "... (>_<) ...",
+    "bot_fallback_error": "**拒绝请求或内部错误**"
+}

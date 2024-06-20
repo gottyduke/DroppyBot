@@ -1,0 +1,13 @@
+{
+    "gpt_thinking_indicator": "Droppy thinking now....",
+    "gpt_desc": "Start a new conversation with gpt-4-turbo, 128k",
+    "gpt4_desc": "Start a new conversation with gpt-4o, 128k",
+    "gpt_prompt": "prompt",
+    "gpt_prompt_desc": "Question, sentence, or any input. To attach files/images, use !gpt command instead",
+    "gpt4_prompt_desc": "Question, sentence, or any input. To attach files/images, use !gpt4 command instead",
+    "gptinit_desc": "Setup your template prompt, applies on every new conversation. Leave blank or no parameter to clear",
+    "gptinit_prompt": "template",
+    "gptinit_prompt_desc": "Blank or don't send this parameter to clear prompt",
+    "gptinit_changed": "Your GPT init prompt has been changed!",
+    "gpt_content_blocked": "Request blocked by content filter"
+}

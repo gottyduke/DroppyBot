@@ -1,0 +1,31 @@
+{
+    "delimiter": {
+        "pack": "|",
+        "parameter": ",",
+        "modifier": "^"
+    },
+    "output_type": "jpeg",
+    "models_path": "rules/trio/models.json",
+    "templates_path": "rules/trio/templates.json",
+    "cache": {
+        "path": "rules/trio/caches.json",
+        "output": "zip",
+        "storage": "cache/trio/",
+        "retention": 7
+    },
+    "dimension": {
+        "width": 1024,
+        "height": 1024
+    },
+    "sampler": "DPM2MKarras",
+    "guidance": 8.0,
+    "steps": 34,
+    "concurrent_job_max": 4,
+    "concurrent_timeout": 300,
+    "generating_indicator": "making arts you like...",
+    "remixing_indicator": "remixing with similar seed...",
+    "cancelled_indicator": "jobs cancelled",
+    "querying_indicator": "fetching loaded resources...",
+    "generating_completed": "finished generating jobs",
+    "remixing_completed": "finished remixing jobs"
+}

@@ -1,0 +1,14 @@
+[
+    {
+        "action": "gpt",
+        "allocated_user": -1,
+        "allocated_pool": -1,
+        "reset_interval": 30
+    },
+    {
+        "action": "gpti",
+        "allocated_user": 1000,
+        "allocated_pool": 1000,
+        "reset_interval": 30
+    }
+]

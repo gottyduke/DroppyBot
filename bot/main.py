@@ -1,129 +1,176 @@
 import asyncio
+import common.logger as logger
+import common.helper as helper
 import discord
+import discord.app_commands as app
 import os
-import shared
 
+try:
+    import modules.secrets
+except ModuleNotFoundError:
+    """
+    if secrets not present in current workspace
+    os.envi[] attempts should stop bot from running
+    """
+    pass
+
+from common.cog import DroppyCog
 from common.config import load_config
-from common.logger import setup_logger
+from common.translator import DroppyTranslator
 from discord.ext import commands
+from typing import Optional
 
 
-# sneaky
-shared.CogBase.sneaky_mode = False
-
-# bot instance
-intents = discord.Intents.default()
-intents.guilds = True
-intents.members = True
-intents.messages = True
-intents.message_content = True
-intents.presences = True
-intents.reactions = True
-intents.typing = True
-intents.voice_states = True
-
-bot = commands.Bot("!", intents=intents)
-
-# dev flag
-enabled_module = {"gpt": True, "trio": True}
+DroppyCog.config = load_config()
+DroppyCog.cwd = os.path.realpath(os.path.dirname(__file__))
+DroppyCog.enabled_modules = {
+    "allocation": True,
+    "gpt": True,
+    "gpti": True,
+    "trio": False,
+}
+DroppyCog.on_maintenance = False
+DroppyCog.sneaky_mode = False
+localization_storage = os.path.join(
+    DroppyCog.cwd, DroppyCog.config.bot.localization.storage
+)
+DroppyCog.translator = DroppyTranslator(localization_storage)
 
 
-async def scan_and_load():
-    """
-    scan the modules folder and load extension that is determined enabled
-    """
-    modules = os.path.join(shared.cwd, "modules")
-    for module in os.listdir(modules):
-        module_dir = os.path.join(modules, module)
-        if os.path.isdir(module_dir) and os.path.exists(
-            os.path.join(module_dir, "bootstrap.py")
-        ):
-            print(f">> loading module >> {module}")
-            if module in enabled_module and enabled_module[module]:
-                await bot.load_extension(f"modules.{module}.bootstrap")
-                print(">> success")
-            else:
-                print(">> pass")
+class DroppyBot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.check(DroppyCog.prepass)
+
+    async def scan_and_load(self):
+        """
+        scan the modules folder and load extension that is determined enabled
+        """
+        modules = os.path.join(DroppyCog.cwd, "modules")
+        for module in os.listdir(modules):
+            module_dir = os.path.join(modules, module)
+            if os.path.isdir(module_dir) and os.path.exists(
+                os.path.join(module_dir, "bootstrap.py")
+            ):
+                print(f">> loading module >> {module}")
+                if (
+                    module in DroppyCog.enabled_modules
+                    and DroppyCog.enabled_modules[module]
+                ):
+                    await DroppyCog.bot.load_extension(f"modules.{module}.bootstrap")
+                    print(">> success")
+                else:
+                    print(">> pass")
+
+    async def setup_hook(self):
+        await self.scan_and_load()
+        await self.tree.set_translator(DroppyCog.translator)
+        await self.tree.sync()
 
 
-async def update_presence(activity=None):
+DroppyCog.bot = DroppyBot(
+    DroppyCog.config.bot.command_prefix,
+    help_command=None,
+    intents=discord.Intents.all(),
+)
+
+
+async def update_presence(activity: Optional[discord.Activity] = None):
     """
     update bot presence from default config value or an specified activity
     """
 
     activity = activity or discord.Activity(
-        type=discord.ActivityType[shared.CogBase.config.bot.presence.type],
-        name=shared.CogBase.config.bot.presence.name,
-        details=shared.CogBase.config.bot.presence.details,
+        type=discord.ActivityType[DroppyCog.config.bot.presence.type],
+        name=DroppyCog.config.bot.presence.name,
+        details=DroppyCog.config.bot.presence.details,
     )
     print(f"updating presence: {activity.type.name} {activity.name} {activity.details}")
 
     status = (
         discord.Status.invisible
-        if shared.CogBase.sneaky_mode
+        if (DroppyCog.sneaky_mode or DroppyCog.on_maintenance)
         else discord.Status.online
     )
 
-    return await shared.CogBase.bot.change_presence(activity=activity, status=status)
+    await DroppyCog.bot.change_presence(activity=activity, status=status)
+    return
+
+
+async def category_autocomplete(ctx: commands.Context, buffer: str):
+    return [
+        app.Choice(name=category, value=category)
+        for category in DroppyCog.help_info.keys()
+        if buffer.lower() in category.lower()
+    ]
+
+
+@DroppyCog.bot.tree.command(description="help_desc")
+@app.rename(category="help_category")
+@app.describe(category="help_category_desc")
+@app.autocomplete(category=category_autocomplete)
+@helper.sanitize
+@DroppyCog.failsafe_ref()
+async def help(ctx: commands.Context, *, category: Optional[str] = None):
+    ref = await DroppyCog.get_ctx_ref(ctx)
+    locale = DroppyCog.get_ctx_locale(ctx)
+
+    if category:
+        if category in DroppyCog.help_info and DroppyCog.help_info[category]:
+            await DroppyCog.help_info[category](ref)
+            return
+
+    img = f"https://raster.shields.io/badge/Droppy%20Bot-{DroppyCog.config.bot.version}-green.png?style=for-the-badge&logo=github"
+    help_detail = DroppyCog.translate("help_detail", locale)
+    categories = (
+        discord.Embed(title=help_detail, description="")
+        .set_thumbnail(url=DroppyCog.bot.user.display_avatar.url)
+        .set_image(url=img)
+    )
+    for cate in DroppyCog.help_info:
+        categories.description += f"- `{DroppyCog.bot.command_prefix}help {cate}`\n"
+
+    src = "https://github.com/gottyduke"
+    footer = DroppyCog.translate("help_footer", locale)
+    categories.description += f"\n{helper.jump_url(footer, src)}"
+
+    await ref.edit(embed=categories)
+
+
+@DroppyCog.bot.event
+async def on_command_error(ctx: commands.Context, e: commands.CommandError):
+    if isinstance(e, commands.CheckFailure):
+        pass
+    else:
+        await commands.Bot.on_command_error(DroppyCog.bot, ctx, e)
 
 
 # initializer
-@bot.event
+@DroppyCog.bot.event
 async def on_ready():
-    print(f"{bot.user} is launching...")
+    # logger
+    logger.setup_logger(DroppyCog.bot)
 
-    # load config and extensions
-    config = load_config()
-    print(f"runtime version: {config.bot.version}")
-
-    # command prefix
-    bot.command_prefix = config.bot.command_prefix
+    print(f"{DroppyCog.bot.user} is launching...")
+    print(f"runtime version: {DroppyCog.config.bot.version}")
 
     # stats
-    for guild in bot.guilds:
-        print(f"serving {guild.name}")
+    for i, guild in enumerate(DroppyCog.bot.guilds):
+        print(f"serving: #{i} [{guild.name}]")
 
     # init
     init_tasks = [
-        setup_logger(bot, shared.CogBase.sneaky_mode),
-        scan_and_load(),
-        bot.tree.sync(),
-        update_presence(),
+        # update_presence(),
     ]
-    init_tasks = [asyncio.create_task(t) for t in init_tasks]
+    init_tasks = list(map(asyncio.create_task, init_tasks))
     await asyncio.gather(*init_tasks)
 
     # finalize
-    shared.CogBase.bot_ready = True
-    print(f"{bot.user} is now ready!")
-
-
-# help info
-bot.help_command = None
-
-
-@bot.command()
-async def help(ctx: commands.Context, *, payload=None):
-    if payload is not None:
-        if (
-            payload in shared.CogBase.help_info
-            and shared.CogBase.help_info[payload] is not None
-        ):
-            return await ctx.reply(embeds=shared.CogBase.help_info[payload])
-
-    categories = discord.Embed(title="请使用以下命令查看详细类别:")
-    categories.description = ""
-    for cate in shared.CogBase.help_info:
-        categories.description += f"- `{bot.command_prefix}help {cate}`\n"
-    categories.set_thumbnail(url=bot.user.display_avatar.url)
-    img = f"https://raster.shields.io/badge/Droppy%20Bot-{shared.CogBase.config.bot.version}-green.png?style=for-the-badge&logo=github"
-    categories.set_image(url=img)
-    src = "https://github.com/gottyduke"
-    categories.description += f"\n[机器人黑奴供应者: DK]({src})"
-
-    await ctx.reply(embed=categories)
+    DroppyCog.bot_ready = True
+    print(f"{DroppyCog.bot.user} is now ready!")
+    if not DroppyCog.sneaky_mode:
+        await logger.logger.report_success()
 
 
 # online!
-shared.CogBase.bot = bot
-bot.run(os.environ["BOT_TOKEN"])
+DroppyCog.bot.run(os.environ["BOT_TOKEN"])

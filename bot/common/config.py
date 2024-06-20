@@ -1,23 +1,53 @@
-import json
-import os
+from .models.allocation import *
+from .models.bot import *
+from .models.gpt import *
+from .models.gpti import *
+from .models.shared import *
+from .models.trio import *
 
-from prodict import Prodict
 
-import shared
+class DroppyBotConfig(BaseModel):
+    allocations: List[AllocationModel]
+    bot: BotConfigModel
+    gpt: GptConfigModel
+    gpti: GptiConfigModel
+    trio: TrioConfigModel
 
 
-def load_config(filename="rules/config.json"):
-    file = os.path.join(shared.cwd, filename)
-    if not os.path.exists(file):
-        raise FileNotFoundError("Expecting config.json")
+def load_config(config_storage: str = "rules/configs"):
+    models = {}
+    cwd = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    for root, _, files in os.walk(os.path.join(cwd, config_storage)):
+        for file in files:
+            file_path = os.path.join(root, file)
+            with open(file_path, "rb") as f:
+                model = os.path.splitext(os.path.basename(file_path))[0]
+                print(f"reading config: {model}")
+                models[model] = json.load(f)
 
-    config = Prodict()
-    with open(file, "rb") as f:
-        config = Prodict.from_dict(json.load(f))
-        if config is None:
-            raise RuntimeError("config file is not initialized")
-        else:
-            shared.CogBase.config = config
+    config = DroppyBotConfig(
+        allocations=[AllocationModel(**a) for a in models["allocation"]],
+        bot=BotConfigModel(**models["bot"]),
+        gpt=GptConfigModel(**models["gpt"]),
+        gpti=GptiConfigModel(**models["gpti"]),
+        trio=TrioConfigModel(**models["trio"]),
+    )
 
-    print(f"current config profile [{os.path.relpath(file)}]")
     return config
+
+
+def load_json(path: str):
+    json_dict = {}
+    if os.path.exists(path):
+        try:
+            with open(path, "rb") as f:
+                json_dict = json.load(f)
+        except Exception:
+            json_dict = {}
+    return json_dict
+
+
+def save_json(path: str, model: dict):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(model, indent=4))

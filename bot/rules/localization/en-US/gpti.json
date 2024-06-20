@@ -1,0 +1,20 @@
+{
+    "gpti_desc": "Generate an image with DALL·E 3",
+    "gpti_painting_indicator": "Droppy is sketching now...",
+    "gpti_painting_completed": "Droppy presents to you:",
+    "gpti_prompt": "prompt",
+    "gpti_prompt_desc": "Describe the image using descriptive phrases to minimize retries. DALL·E 3 will revise your prompt",
+    "gpti_edit_prompt": "Edit",
+    "gpti_request_generation": "Generate",
+    "gpti_request_masking": "Masking",
+    "gpti_open_proxy": "View Image",
+    "gpti_download_artifact": "Download",
+    "gpti_quality_standard": "Standard",
+    "gpti_quality_hd": "HD",
+    "gpti_style_vivid": "Vivid",
+    "gpti_style_natural": "Natural",
+    "gpti_dimension_vertical": "Portrait",
+    "gpti_dimension_horizontal": "Landscape",
+    "gpti_dimension_square": "Square",
+    "gpti_revised_prompt": "prompt (revised)"
+}

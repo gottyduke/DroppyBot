@@ -1,0 +1,13 @@
+{
+    "gpt_thinking_indicator": "小D捏造事实中...",
+    "gpt_desc": "开始一个新的对话, gpt-4-turbo, 128k",
+    "gpt4_desc": "开始一个新的对话, gpt-4o, 128k",
+    "gpt_prompt": "输入",
+    "gpt_prompt_desc": "问题, 句子, 或者任何文本. 附加文件/图片请使用 !gpt 命令",
+    "gpt4_prompt_desc": "问题, 句子, 或者任何文本. 附加文件/图片请使用 !gpt4 命令",
+    "gptinit_desc": "设置专属的模板/咒语, 每个新对话都会自动应用. 不附加输入即清空模板",
+    "gptinit_prompt": "模板",
+    "gptinit_prompt_desc": "空或不附加此参数即可清空模板",
+    "gptinit_changed": "您的GPT设定已更改!",
+    "gpt_content_blocked": "请求被驳回: 未通过内容检查"
+}

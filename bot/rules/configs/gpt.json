@@ -1,0 +1,23 @@
+{
+    "contextual": {
+        "max_ctx_per_user": 99,
+        "max_ctx_percentage": 0.75
+    },
+    "user_init_path": "rules/gpt/user_init.json",
+    "model": {
+        "advanced": "gpt-4o",
+        "default": "gpt-4-turbo",
+        "specs": [
+            {
+                "max_token": 128000,
+                "name": "gpt-4-turbo"
+            },
+            {
+                "max_token": 128000,
+                "name": "gpt-4o"
+            }
+        ],
+        "vision_fidelity": "auto"
+    },
+    "thinking_indicator": "gpt_thinking_indicator"
+}

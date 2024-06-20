@@ -1,7 +1,10 @@
-discord.py==2.3.2
-openai==1.33.0
-prodict==0.8.18
-requests==2.32.3
-urlextract==1.9.0
+Pillow==10.3.0
+Requests==2.32.3
 civitai-py==0.1.9
-pillow==10.3.0
+civitai==1.0.0
+discord.py==2.3.2
+fuzzywuzzy==0.18.0
+openai==1.33.0
+pydantic==2.7.4
+python-Levenshtein==0.25.1
+typing_extensions==4.12.2

@@ -1,0 +1,39 @@
+{
+    "dimensions": {
+        "square": {
+            "width": 1024,
+            "height": 1024
+        },
+        "vertical": {
+            "width": 1792,
+            "height": 1024
+        },
+        "horizontal": {
+            "width": 1024,
+            "height": 1792
+        }
+    },
+    "models": {
+        "advanced": "dall-e-3",
+        "default": "dall-e-2",
+        "edit": "dall-e-2"
+    },
+    "qualities": {
+        "standard": "standard",
+        "hd": "hd"
+    },
+    "styles": {
+        "vivid": "vivid",
+        "natural": "natural"
+    },
+    "defaults": {
+        "model": "dall-e-3",
+        "dimension": "square",
+        "style": "vivid",
+        "quality": "hd"
+    },
+    "output": "png",
+    "variation_max": 10,
+    "painting_completed": "gpti_painting_completed",
+    "painting_indicator": "gpti_painting_indicator"
+}

@@ -1,0 +1,20 @@
+{
+    "command_prefix": "!",
+    "log": {
+        "do_truncate": false,
+        "entry_truncation": 256,
+        "session_interval": 60.0
+    },
+    "presence": {
+        "details": "",
+        "name": "whispererererer..",
+        "type": "listening"
+    },
+    "version": "1.0.2",
+    "localization": {
+        "storage": "rules/localization",
+        "fallback_indicator": "bot_fallback_indicator",
+        "fallback_error": "bot_fallback_error"
+    },
+    "usage_path": "rules/usage.json"
+}

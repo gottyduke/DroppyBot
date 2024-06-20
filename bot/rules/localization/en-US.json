@@ -1,0 +1,5 @@
+{
+    "allocation_limited": "(╯°□°)╯︵ ┻━┻\nYou have exhausted your {0} allocation of {1}, per {2} days\nNext reset in: {3} days",
+    "bot_fallback_indicator": "... (>_<) ...",
+    "bot_fallback_error": "**Request Denied / Internal Error**"
+}

@@ -1,0 +1,82 @@
+[
+    {
+        "model": 1,
+        "name": "Pony Diffusion V6 XL",
+        "urn": "urn:air:pony:checkpoint:civitai:257749@290640"
+    },
+    {
+        "model": 2,
+        "name": "ExpressiveH (Hentai LoRa Style)",
+        "urn": "urn:air:pony:lora:civitai:341353@382152"
+    },
+    {
+        "model": 2,
+        "name": "Detail Tweaker XL",
+        "urn": "urn:air:sdxl:lora:civitai:122359@135867"
+    },
+    {
+        "model": 2,
+        "name": "Vixon's Pony Styles ",
+        "urn": "urn:air:pony:lora:civitai:352581@398847"
+    },
+    {
+        "model": 2,
+        "name": "Styles for Pony Diffusion V6 XL ",
+        "urn": "urn:air:pony:lora:civitai:264290@330475"
+    },
+    {
+        "model": 2,
+        "name": "Fritia Symphony of Frenzy",
+        "urn": "urn:air:pony:lora:civitai:501572@557508"
+    },
+    {
+        "model": 2,
+        "name": "Murky's - Legs Up Presenting",
+        "urn": "urn:air:sd1:lora:civitai:20026@23784"
+    },
+    {
+        "model": 2,
+        "name": "feet_anime_pony_xl",
+        "urn": "urn:air:pony:lora:civitai:308615@568727"
+    },
+    {
+        "model": 1,
+        "name": "AutismMix SDXL",
+        "urn": "urn:air:pony:checkpoint:civitai:288584@324619"
+    },
+    {
+        "model": 2,
+        "name": "Katya Graceful Danseuse",
+        "urn": "urn:air:pony:lora:civitai:392571@557447"
+    },
+    {
+        "model": 2,
+        "name": "Eatchel Overdue Radiance",
+        "urn": "urn:air:pony:lora:civitai:397536@561289"
+    },
+    {
+        "model": 2,
+        "name": "Fenny Sugar Queen",
+        "urn": "urn:air:pony:lora:civitai:496882@552366"
+    },
+    {
+        "model": 2,
+        "name": "Siris Flutter of Ecstasy",
+        "urn": "urn:air:pony:lora:civitai:492946@548070"
+    },
+    {
+        "model": 1,
+        "name": "reweik_PonyXL",
+        "urn": "urn:air:pony:checkpoint:civitai:404802@451340"
+    },
+    {
+        "model": 2,
+        "name": "Acacia Allure of Lotus",
+        "urn": "urn:air:pony:lora:civitai:495598@550967"
+    },
+    {
+        "model": 1,
+        "name": "hassaku XL",
+        "urn": "urn:air:sdxl:checkpoint:civitai:140272@223144"
+    }
+]

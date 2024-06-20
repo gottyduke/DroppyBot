@@ -1,0 +1,20 @@
+{
+    "gpti_desc": "生成一副图片, DALL·E 3",
+    "gpti_painting_indicator": "Droppy 正在鬼涂乱画中...",
+    "gpti_painting_completed": "Droppy 为您呈现：",
+    "gpti_prompt": "输入",
+    "gpti_prompt_desc": "描述图片或需求, 尽量使用描述性短语以避免反复试错。注意: DALL·E 3 会改进您的输入",
+    "gpti_edit_prompt": "编辑",
+    "gpti_request_generation": "生成",
+    "gpti_request_masking": "遮罩",
+    "gpti_open_proxy": "查看图片",
+    "gpti_download_artifact": "下载",
+    "gpti_quality_standard": "标准",
+    "gpti_quality_hd": "高清",
+    "gpti_style_vivid": "生动",
+    "gpti_style_natural": "自然",
+    "gpti_dimension_vertical": "竖版",
+    "gpti_dimension_horizontal": "横版",
+    "gpti_dimension_square": "方形",
+    "gpti_revised_prompt": "输入 (改进)"
+}

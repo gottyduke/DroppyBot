@@ -1,0 +1,7 @@
+{
+    "help_desc": "View detailed help info about specific command",
+    "help_category": "category",
+    "help_category_desc": "Available help category",
+    "help_detail": "Use following command to view details",
+    "help_footer": "DroppyBot powered by DK with 🥰"
+}

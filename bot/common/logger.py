@@ -1,12 +1,14 @@
-import datetime
+import asyncio
+import common.helper as helper
+import discord
 import enum
 import os
 import queue
+import requests
 import socket
 import time
 
-import discord
-import requests
+from datetime import datetime, timezone, timedelta
 from discord.ext import commands, tasks
 
 
@@ -28,8 +30,8 @@ class Logger:
         self.session_count = 0
 
         channel = self.bot.get_channel(int(os.environ["DEV_CHANNEL"]))
-        if channel is None:
-            raise RuntimeError("Log channel does not exist!")
+        if not channel:
+            raise RuntimeError("Log channel does not exist or unable to fetch")
 
         self.saved_channel = channel
         self.flush.start()
@@ -44,18 +46,23 @@ class Logger:
         if elapsed < self.log_interval:
             return
 
-        msg = f"*SESSION [{datetime.datetime.fromtimestamp(int(self.session_start)).strftime('%Y/%m/%d %H:%M:%S')} - "
-        msg += f"{datetime.datetime.fromtimestamp(int(self.session_end)).strftime('%H:%M:%S')}]* "
-        msg += f">>> **`{len(self.logpool.queue)}`** commands executed\n"
+        session_start_time = datetime.fromtimestamp(self.session_start, tz=timezone.utc)
+        session_start_time += timedelta(hours=-5)
+        session_end_time = datetime.fromtimestamp(self.session_end, tz=timezone.utc)
+        session_end_time += timedelta(hours=-5)
+        msg = f"*SESSION [{session_start_time.strftime('%Y/%m/%d %H:%M:%S')} - "
+        msg += f"{session_end_time.strftime('%H:%M:%S')}]* "
+        msg += f">>> **`{len(self.logpool.queue)}`** command(s) executed\n"
         await self.saved_channel.send(msg, silent=True)
 
         while not self.logpool.empty():
             log_entry, level = self.logpool.get()
-            if log_entry is None:
+            if not log_entry:
                 break
             if level == self.LogLevel.ERROR:
                 log_entry += f"\n<@{os.environ['DEV_ID']}>"
-            await self.saved_channel.send(log_entry, silent=level != self.LogLevel.ERROR)
+            for chunk in helper.chunk_with_size(log_entry, 3000):
+                await self.saved_channel.send(chunk, silent=True)
 
         self.session_start = None
         self.session_end = None
@@ -77,13 +84,15 @@ class Logger:
         return msg
 
     def log(self, msg: str, level=LogLevel.INFO):
-        if self.saved_channel is None:
-            raise RuntimeError("Log channel has not been initialized!")
+        if not self.saved_channel:
+            raise RuntimeError(
+                "Log channel has not been initialized or unable to fetch"
+            )
 
-        if self.session_start is None:
+        if not self.session_start:
             self.session_start = time.time()
 
-        msg = f"{datetime.datetime.now().strftime('%H:%M:%S')} **{level.name}** {msg}"
+        msg = f"{helper.timestamp_now('%H:%M:%S')} **{level.name}** {msg}"
         self.logpool.put((msg, level))
 
         print(self.normalized_console_output(msg, level))
@@ -91,11 +100,17 @@ class Logger:
         self.flush.restart()
 
     async def report_success(self):
+        fallback_ip = "N/A"
+        try:
+            ip = requests.get("https://api.ipify.org", timeout=5).text
+        except requests.RequestException:
+            ip = fallback_ip
+
         login_info = (
-            f"```\ntime : {datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
+            f"```\ntime : {helper.timestamp_now('%Y/%m/%d %H:%M:%S')}\n"
             f"fqdn : {socket.getfqdn()}\n"
             f"ipv4 : {socket.gethostbyname(socket.gethostname())}\n"
-            f"addr : {requests.get('https://api.ipify.org').text}\n```"
+            f"addr : {ip}\n```"
         )
 
         await self.saved_channel.send(
@@ -110,17 +125,21 @@ class Logger:
 logger: Logger = None
 
 
-async def setup_logger(bot, sneaky=False):
+def setup_logger(bot):
     global logger
 
     logger = Logger(bot)
-    if not sneaky:
-        await logger.report_success()
+
+
+def change_interval(seconds):
+    logger.flush.change_interval(seconds=seconds)
+    logger.flush.restart()
 
 
 def log(msg: str):
     logger.log(msg)
 
 
-def error(msg: str):
-    logger.log(msg, logger.LogLevel.ERROR)
+def error(msg: str, *, mention=True):
+    level = Logger.LogLevel.ERROR if mention else Logger.LogLevel.WARN
+    logger.log(msg, level)

@@ -1,0 +1,28 @@
+[
+    {
+        "name": "fritia",
+        "author": "freshcloth",
+        "base_model": "urn:air:pony:checkpoint:civitai:404802@451340",
+        "add_models": {
+            "urn:air:pony:lora:civitai:341353@382152": 1.0,
+            "urn:air:pony:lora:civitai:501572@557508": 0.65,
+            "urn:air:pony:lora:civitai:308615@568727": 1.0,
+            "urn:air:sdxl:lora:civitai:122359@135867": 1.5,
+            "urn:air:pony:lora:civitai:264290@330475": 1.0
+        },
+        "base_prompt": "score_9,score_8_up,score_7_up,score_6_up,score_5_up,score_4_up,best quality,masterpiece,4k,prefect lighting,rating explicit,anime,1girl,(solo:1.2),uncensored,sb-fritia-sof,shoulders,pink hair,frills,choker,thighhighs,shoes,hair ornament,thigh strap,leotard,arm garter,bracelet,wide hips,(steaming body:1.2),sweat,blush,heavy breathing,sound effects,blush,Expressiveh,(looking at viewer:1.2),nude,small breast,detailed",
+        "negative_prompt": "bad_hands,source_pony,source_furry,3d,frame,logo,signature,censored,disembodied_limb,spy x family,brown hair,bad_feet,bad_toes,blue hair,yellow hair",
+        "guidance": 8.0,
+        "steps": 60.0
+    },
+    {
+        "name": "saya",
+        "author": "the_one_who_bricks",
+        "base_model": "urn:air:sdxl:checkpoint:civitai:140272@223144",
+        "add_models": {},
+        "base_prompt": "1girl,flower,long hair,kimono,outdoors,purple eyes,black hair,long hair,smile,animal ears,upper body,tree,medium breasts",
+        "negative_prompt": "",
+        "guidance": 7.0,
+        "steps": 60
+    }
+]

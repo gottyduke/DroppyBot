@@ -1,5 +1,6 @@
 import asyncio
 import civitai.models
+import common.helper as helper
 import discord
 import json
 import os
@@ -11,9 +12,11 @@ from PIL import Image
 from datetime import datetime, timedelta, UTC
 from discord.ext import commands
 from io import BytesIO
-from modules.trio.artifact import TrioArtifact
-from modules.trio.model import TrioModel, TrioModelType
-from modules.trio.template import TrioTemplate
+from common.exception import DroppyBotException
+from modules.trio.resource.manager import TrioResourceManager
+from modules.trio.resource.cache import TrioArtifact
+from modules.trio.resource.model import TrioModel, TrioModelType
+from modules.trio.resource.template import TrioTemplate
 from modules.trio.trioview import TrioControlView, TrioJobView
 from prodict import Prodict
 from shared import CogBase, cwd
@@ -22,113 +25,7 @@ from shared import CogBase, cwd
 class TrioHandler(CogBase, commands.Cog):
 
     def __init__(self):
-        self.trio_models: list[TrioModel] = self.load_trio_models()
-        self.user_templates: list[TrioTemplate] = self.load_user_templates()
-        self.user_artifacts: list[TrioArtifact] = self.load_user_artifacts()
-
-        self.invalidate_cache()
-
-    def load_trio_models(self):
-        model_path = os.path.join(cwd, self.config.trio.model_path)
-        trio_models = []
-        if os.path.exists(model_path):
-            try:
-                with open(model_path, "rb") as f:
-                    for m in json.load(f):
-                        trio_models.append(TrioModel(**m))
-            except Exception:
-                trio_models = []
-        return trio_models
-
-    def save_trio_models(self):
-        model_path = os.path.join(cwd, self.config.trio.model_path)
-        with open(model_path, "w", encoding="utf-8") as f:
-            json.dump(
-                [m.__dict__ for m in self.trio_models],
-                f,
-                indent=4,
-                ensure_ascii=False,
-            )
-
-    def load_user_templates(self):
-        user_templates = []
-        template_path = os.path.join(cwd, self.config.trio.template_path)
-        if os.path.exists(template_path):
-            try:
-                with open(template_path, "rb") as f:
-                    user_templates = [TrioTemplate(**t) for t in json.load(f)]
-            except Exception:
-                user_templates = []
-        return user_templates
-
-    def save_user_templates(self):
-        template_path = os.path.join(cwd, self.config.trio.template_path)
-        with open(template_path, "w", encoding="utf-8") as f:
-            json.dump(
-                [t.__dict__ for t in self.user_templates],
-                f,
-                indent=4,
-                ensure_ascii=False,
-            )
-
-    def load_user_artifacts(self):
-        cache_storage = os.path.join(cwd, self.config.trio.cache.storage)
-        if not os.path.exists(cache_storage):
-            os.makedirs(cache_storage)
-
-        user_artifacts = []
-        cache_path = os.path.join(cwd, self.config.trio.cache.path)
-        if os.path.exists(cache_path):
-            try:
-                with open(cache_path, "rb") as f:
-                    user_artifacts = [TrioArtifact(**a) for a in json.load(f)]
-            except Exception:
-                user_artifacts = []
-        return user_artifacts
-
-    def save_user_artifacts(self):
-        cache_path = os.path.join(cwd, self.config.trio.cache.path)
-        with open(cache_path, "w", encoding="utf-8") as f:
-            json.dump(
-                [a.__dict__ for a in self.user_artifacts],
-                f,
-                indent=4,
-                ensure_ascii=False,
-            )
-
-    def invalidate_cache(self):
-        retention = timedelta(days=self.config.trio.cache.retention)
-
-        validated = []
-        for root, _, files in os.walk(
-            os.path.join(cwd, self.config.trio.cache.storage)
-        ):
-            for f in files:
-                file_path = os.path.join(root, f)
-                valid = False
-                for artifact in self.user_artifacts:
-                    if artifact.cache in f:
-                        creation = datetime.fromtimestamp(os.path.getctime(file_path))
-                        if datetime.now() - creation < retention:
-                            validated.append(artifact)
-                            valid = True
-                if not valid:
-                    os.remove(file_path)
-
-        validated = sorted(validated, key=lambda a: a.timestamp)
-        self.user_artifacts = validated
-        self.save_user_artifacts()
-
-    def fetch_model_version(self, model_urn):
-        model_id = re.search(r":(\d+)@", model_urn)
-        if model_id:
-            response = requests.get(
-                f"https://civitai.com/api/v1/models/{model_id.group(1)}",
-                params={"token": os.environ["CIVITAI_API_TOKEN"]},
-            )
-            if response.status_code == 200:
-                return Prodict.from_dict(response.json()["modelVersions"][0])
-        return Prodict.from_dict({"name": "unknown"})
+        self.resource = TrioResourceManager(self.config)
 
     def get_models(self, model_type: TrioModelType):
         return [m for m in self.trio_models if m.model == model_type]
@@ -144,13 +41,6 @@ class TrioHandler(CogBase, commands.Cog):
             pack = param.split(":")
             details[pack[0].strip()] = ":".join(pack[1:])
         return Prodict.from_dict(details)
-
-    def get_cache_path(self, cache: str):
-        return os.path.join(
-            cwd,
-            self.config.trio.cache.storage,
-            f"{cache}.{self.config.trio.cache.output}",
-        )
 
     def fetch_cache(self, artifact: TrioArtifact):
         cache_path = self.get_cache_path(artifact.cache)
@@ -289,21 +179,23 @@ class TrioHandler(CogBase, commands.Cog):
             return False
         return True
 
-    async def report_model_index(self, ctx: discord.Message, index, max):
-        if index > max:
+    async def report_model_index(self, ctx: discord.Message, index, available):
+        if index > available:
             await ctx.edit(
                 embed=self.as_embed(
-                    f"Model index out of range, available **`{max}`**, given **`{index}`**",
+                    f"Model index out of range, available **`{available}`**, given **`{index}`**",
                     ctx.author,
                 ),
             )
             return False
         return True
 
-    async def report_model_notfound(self, ctx: discord.Message, model_type, name):
+    async def report_resource_notfound(
+        self, ctx: discord.Message, resource: str, resource_type: str = "ANY"
+    ):
         await ctx.edit(
             embed=self.as_embed(
-                f"**`{model_type}`** model with name {name} cannot be found",
+                f"**{resource_type}** resource with name or index {resource} cannot be found",
                 ctx.author,
             ),
         )
@@ -323,15 +215,23 @@ class TrioHandler(CogBase, commands.Cog):
             return None
         return version
 
+    async def report_model_empty(self, ctx: discord.Message):
+        await ctx.edit(
+            embed=self.as_embed(
+                "No models are loaded/available\nUse `!trioadd` to load models first",
+                ctx.author,
+            ),
+        )
+
+    @helper.sanitized
     async def get_valid_model(
-        self, ctx: discord.Message, model_type: TrioModelType, query: str
+        self, ctx: discord.Message, model_type: TrioModelType | None, query: str
     ):
         if not await self.check_empty_models(ctx, model_type):
             return None
 
-        query = query.strip()
-        models = self.get_models(model_type)
         model = None
+        models = self.get_models(model_type)
 
         if query.isnumeric():
             index = int(query)
@@ -339,43 +239,27 @@ class TrioHandler(CogBase, commands.Cog):
                 return None
             model = models[index - 1]
         else:
-            same_name = [
-                m for m in models if m.name.strip().casefold() == query.casefold()
-            ]
-            same_urn = [m for m in models if m.urn.casefold() == query.casefold()]
-            if len(same_name) != 0:
-                model = same_name[0]
-            elif len(same_urn) != 0:
-                model = same_urn[0]
-            else:
-                await self.report_model_notfound(ctx, model_type, query)
+            model = helper.first(
+                models,
+                lambda m: helper.iequal(m.name, query) or helper.iequal(m.urn, query),
+            )
+            if model is None:
+                await self.report_resource_notfound(ctx, query)
                 return None
 
         version = await self.report_model_outdated(ctx, model)
         if version is not None:
             return model, version
 
-    async def get_valid_template(self, ctx: discord.Message, query: str):
+    async def get_valid_template(self, query: str):
         template = None
 
         if query.isnumeric() and int(query) <= len(self.user_templates):
             template = self.user_templates[int(query) - 1]
         else:
-            templates = [
-                t
-                for t in self.user_templates
-                if t.name.strip().casefold() == query.strip().casefold()
-            ]
-            if len(templates) != 0:
-                template = templates[0]
-        if template is None:
-            await ctx.edit(
-                embed=self.as_embed(
-                    f"Template with name **`{query}`** cannot be found",
-                    ctx.author,
-                ),
+            template = helper.first(
+                self.user_templates, lambda t: helper.iequal(t.name, query)
             )
-            return None
         return template
 
     async def add_user_template(
@@ -384,8 +268,7 @@ class TrioHandler(CogBase, commands.Cog):
         detail = f"name:{detail}"
         details = self.sanitized_parameters(detail)
 
-        available = list(details.keys())
-        if "ckpt" not in available or "prompt" not in available:
+        if "ckpt" not in details or "prompt" not in details:
             await ctx.edit(
                 embed=self.as_embed(
                     f"Follow the syntax to add a template\n"
@@ -510,32 +393,29 @@ class TrioHandler(CogBase, commands.Cog):
             f"trio add **Template**, `{new_template.name}`\n```\n{log_string}\n```",
         )
 
+    @helper.sanitized
     async def del_user_template(
-        self, ctx: discord.Message, author: discord.User, name: str
+        self, ctx: discord.Message, author: discord.User, query: str
     ):
-        template = [
-            t
-            for t in self.user_templates
-            if t.author == author.name
-            and t.name.strip().casefold() == name.strip().casefold()
-        ]
-        if len(template) == 0:
+        template = helper.first(self.user_templates, lambda t: t.name, query)
+        if template is None:
             return
 
-        self.user_templates.remove(template[0])
+        self.user_templates.remove(template)
         self.save_user_templates()
 
         await ctx.edit(
             embed=self.as_embed(
-                f"Removed user template, `{template[0].name}`",
+                f"Removed user template, `{template.name}`",
                 author,
             ),
         )
         self.log(
             ctx,
-            f"trio del **Template**, `{template[0].name}`",
+            f"trio del **Template**, `{template.name}`",
         )
 
+    @helper.sanitized
     async def create_and_poll_jobs(
         self, ctx: discord.Message, input_model: str, temp: bool = False
     ):
@@ -555,7 +435,7 @@ class TrioHandler(CogBase, commands.Cog):
             for i, response in enumerate(responses["jobs"]):
                 available = response["result"].get("available")
                 scheduled = response.get("scheduled")
-                if i not in collected.keys() and available and not scheduled:
+                if i not in collected and available and not scheduled:
                     display_task = None
                     image_url = response["result"].get("blobUrl")
                     if image_url:
@@ -581,10 +461,10 @@ class TrioHandler(CogBase, commands.Cog):
 
         collected = [c for _, c in collected.items() if c is not None]
 
-        if len(collected) > 0:
+        if len(collected) == 0:
             raise Exception("Unable to schedule any job")
 
-        completion_time = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        completion_time = helper.timestamp_now()
 
         artifact = TrioArtifact(
             ctx.author.name,
@@ -602,6 +482,7 @@ class TrioHandler(CogBase, commands.Cog):
         await asyncio.gather(*display_tasks)
         return completion_time
 
+    @helper.sanitized
     async def generate_from_template(
         self,
         ctx: commands.Context | discord.Interaction,
@@ -610,8 +491,9 @@ class TrioHandler(CogBase, commands.Cog):
     ):
         ref = await self.get_ctx_ref(ctx)
 
-        template = await self.get_valid_template(ref, template_query)
+        template = await self.get_valid_template(template_query)
         if template is None:
+            await self.report_resource_notfound(ref, template_query, "Template")
             return
 
         input_model = self.create_input_model(template, prompts)
@@ -647,6 +529,7 @@ class TrioHandler(CogBase, commands.Cog):
 
     @commands.hybrid_command()
     @CogBase.failsafe(CogBase.config.trio.generating_indicator)
+    @helper.sanitized
     async def trio(self, ctx: commands.Context, template: str, *, prompts: str):
         """
         Generate images with a trio template resource, random seed
@@ -743,6 +626,7 @@ class TrioHandler(CogBase, commands.Cog):
     @CogBase.failsafe(
         CogBase.config.trio.model_querying_indicator, force_ephemeral=True
     )
+    @helper.sanitized
     async def trioadd(self, ctx: commands.Context, trio_type: str, *, detail: str):
         """
         Add a trio resource
@@ -772,12 +656,14 @@ class TrioHandler(CogBase, commands.Cog):
 
         new_model = TrioModel(trio_type, **details)
         model_type = TrioModelType(new_model.model).name.upper()
-        exist_model = [m for m in self.trio_models if m.urn == new_model.urn]
-        if len(exist_model) != 0:
+        exist_model = helper.first(
+            self.trio_models, lambda m: helper.iequal(m.urn, new_model.urn)
+        )
+        if exist_model is not None:
             await ref.edit(
                 embed=self.as_embed(
                     f"A **`{model_type}`** "
-                    + f"model with same resource urn already exists\n```\n{exist_model[0].name}\n```",
+                    + f"model with same resource urn already exists\n```\n{exist_model.name}\n```",
                     ctx.author,
                 ),
             )
@@ -804,6 +690,7 @@ class TrioHandler(CogBase, commands.Cog):
     @CogBase.failsafe(
         CogBase.config.trio.model_querying_indicator, force_ephemeral=True
     )
+    @helper.sanitized
     async def triodel(self, ctx: commands.Context, trio_type: str, query: str):
         """
         Delete a trio resource by its index or name
@@ -822,34 +709,41 @@ class TrioHandler(CogBase, commands.Cog):
         model = await self.get_valid_model(ref, trio_type, query)
         if model is None:
             return
-        deleter = [m for m in self.trio_models if m.urn == model[0].urn]
-        self.trio_models.remove(deleter[0])
+        model = model[0]
+
+        model_type = TrioModelType(model.model).name.upper()
+        deleter = helper.first(
+            self.trio_models, lambda m: helper.iequal(m.urn, model.urn)
+        )
+        if deleter is not None:
+            self.trio_models.remove(deleter)
         self.save_trio_models()
         await ref.edit(
             embed=self.as_embed(
-                f"Removed `{trio_type.upper()}`, **{model[0].name}**",
+                f"Removed `{model_type}`, **{model.name}**",
                 ctx.author,
             ),
         )
         self.log(
             ctx.message,
-            f"trio del **{trio_type.upper()}**\n```\n{model[0].name}\n```",
+            f"trio del **{model_type}**\n```\n{model.name}\n```",
         )
 
     @commands.hybrid_command()
     @CogBase.failsafe(
         CogBase.config.trio.model_querying_indicator, force_ephemeral=True
     )
+    @helper.sanitized
     async def trioget(self, ctx: commands.Context, trio_type: str, *, query: str):
         """
         Query information about a specific trio resource by its index or name
         """
-
         ref = await self.get_ctx_ref(ctx)
 
         if trio_type.lower() == "template":
-            template = await self.get_valid_template(ref, query)
+            template = await self.get_valid_template(query)
             if template is None:
+                await self.report_resource_notfound(ref, query, "Template")
                 return
 
             ckpt = await self.get_valid_model(
@@ -865,7 +759,7 @@ class TrioHandler(CogBase, commands.Cog):
                 [f"- {m}, {s}" for m, s in log_template.add_models.items()]
             )
 
-            short_cut = f"!trioadd template {template.name}|ckpt:{ckpt[0].name}"
+            short_cut = f"{template.name}|ckpt:{ckpt[0].name}"
             if len(log_template.add_models) > 0:
                 short_cut_string = self.config.trio.delimiter.parameter.join(
                     [
@@ -921,32 +815,33 @@ class TrioHandler(CogBase, commands.Cog):
             )
             return
         elif trio_type.lower() == "cache":
-            found = [a for a in self.user_artifacts if query == a.cache]
-            if len(found) > 0:
-                artifact = found[0]
+            artifact = helper.first(self.user_artifacts, lambda a: a.cache == query)
+            if artifact is not None:
                 cache = self.fetch_cache(artifact)
                 if cache is not None:
                     await ref.edit(file=discord.File(cache, f"artifact_{query}.zip"))
-            return
+                    return
+            await self.report_resource_notfound(ref, query, "CACHE")
         else:
             model_type = await self.validate_model_type(ref, trio_type)
-            if model_type is None:
-                return
-
             model = await self.get_valid_model(ref, model_type, query)
-            if model is None:
+            if model is not None:
+                await ref.edit(
+                    embed=self.as_embed("", ctx.author)
+                    .add_field(
+                        name=model[0].name,
+                        value=f"```\n{TrioModelType(model_type).name}\n```",
+                        inline=False,
+                    )
+                    .add_field(
+                        name="Version",
+                        value=f"```\n{model[1].name}\n```",
+                        inline=False,
+                    )
+                    .add_field(
+                        name="Uri", value=f"```\n{model[0].urn}\n```", inline=False
+                    )
+                    .set_image(url=model[1].images[0]["url"]),
+                )
                 return
-
-            await ref.edit(
-                embed=self.as_embed("", ctx.author)
-                .add_field(
-                    name=model[0].name,
-                    value=f"```\n{TrioModelType(model_type).name}\n```",
-                    inline=False,
-                )
-                .add_field(
-                    name="Version", value=f"```\n{model[1].name}\n```", inline=False
-                )
-                .add_field(name="Uri", value=f"```\n{model[0].urn}\n```", inline=False)
-                .set_image(url=model[1].images[0]["url"]),
-            )
+            await self.report_resource_notfound(ref, query)
