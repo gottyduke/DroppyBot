@@ -10,7 +10,7 @@ def as_embed(
     msg,
     color_owner: Optional[discord.User] = None,
     color: discord.Color = discord.Color.from_rgb(236, 248, 248),
-    footer_append: Optional[str] = "updated: 2024/06/13*",
+    footer_append: Optional[str] = "updated: 2024/06/20*",
     footer_icon: Optional[str] = None,
 ):
     """

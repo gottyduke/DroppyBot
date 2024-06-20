@@ -1,13 +1,11 @@
 import base64
-import zipfile
-
-import common.config as config
 import common.helper as helper
 import discord
 import discord.app_commands as app
 import openai
 import os
 
+from .help import generate_help_info
 from .models.input import GptiInputModel
 from .models.output import GptiOutputModel
 from .views.gptiview import GptiJobView
@@ -21,46 +19,6 @@ from typing import Optional, Union
 
 
 class GPTIHandler(DroppyCog):
-    def generate_help_info(self):
-        help_info = [
-            discord.Embed(
-                color=discord.Color.blurple(),
-                title="GPT图片生成",
-                description="""
-            使用DALL-E-3进行图片生成, powered by OpenAI
-            
-            图片链接将会在生成1小时后失效, 请酌情保存(右键图片, 保存图片)
-            """,
-            )
-        ]
-        help_info.append(
-            discord.Embed(
-                color=discord.Color.blurple(),
-                title="命令指南及其示例:",
-                description=f"""
-{self.compiled_gpti_cmd} : 给定文字prompt生成图片
-
-            例如, 生成1张小猫抱着鱼狂奔的图片
-            ```
-{self.compiled_gpti_cmd} 小猫在集市中抱着一条鱼鱼狂奔, 背后人们穷追不舍!```
-            """,
-            )
-        )
-        help_info.append(
-            discord.Embed(
-                color=discord.Color.blurple(),
-                title="系列生成(多张):",
-                description=f"""
-{self.compiled_gpti_cmd} : 给定文字prompt生成多张类似风格的图片变种
-
-            例如, 生成5张珠穆朗玛峰填平东非大裂谷的图片
-            ```
-{self.compiled_gpti_cmd} x5 珠穆朗玛峰填平东非大裂谷```
-            """,
-            )
-        )
-        return help_info
-
     def __init__(self):
         self.endpoint = openai.AsyncOpenAI(
             api_key=os.environ["OPENAI_KEY"], base_url=os.environ["OPENAI_API"]
@@ -69,7 +27,7 @@ class GPTIHandler(DroppyCog):
             api_key=os.environ["OPENAI_ALT_KEY"], base_url=os.environ["OPENAI_ALT_API"]
         )
 
-        # self.help_info["GPTI"] = self.generate_help_info
+        self.help_info["GPTI"] = generate_help_info
 
     def calculate_generate_cost(self, input_model: GptiInputModel):
         cost = 1.0 if input_model.model == self.config.gpti.models.advanced else 0.5
@@ -98,6 +56,17 @@ class GPTIHandler(DroppyCog):
         image_in.seek(0)
         return image_in
 
+    def get_image_name(self, input_model: GptiInputModel):
+        base_name = helper.timestamp_now()
+        base_name += f"_{input_model.size}"
+
+        if input_model.quality:
+            base_name += f"_{input_model.quality}"
+        if input_model.style:
+            base_name += f"_{input_model.style}"
+
+        return f"{base_name}.{self.config.gpti.output}"
+
     async def create_gpti_generation(
         self,
         ref: discord.Message,
@@ -115,7 +84,9 @@ class GPTIHandler(DroppyCog):
         if not input_model.prompt:
             raise DroppyBotError("Empty Prompt")
 
-        locale = self.get_ctx_locale(ref)
+        locale = DroppyCog.ctx_locales.get(
+            str(author.id), discord.Locale.american_english
+        )
 
         self.sanitize_input_model(input_model)
         cost = self.calculate_generate_cost(input_model)
@@ -128,7 +99,7 @@ class GPTIHandler(DroppyCog):
             response = await endpoint.images.generate(
                 **input_model.model_dump(exclude_none=True), response_format="b64_json"
             )
-        except openai.BadRequestError:
+        except:
             feedback = self.translate("gpt_content_blocked", locale)
             raise DroppyBotError(feedback)
 
@@ -138,8 +109,7 @@ class GPTIHandler(DroppyCog):
         image = response.data[0]
         data = base64.b64decode(image.b64_json)
         image_io = self.convert_webp(BytesIO(data))
-        base_name = helper.timestamp_now()
-        image_name = f"{base_name}.{self.config.gpti.output}"
+        image_name = self.get_image_name(input_model)
         image_file = discord.File(image_io, image_name, description=input_model.prompt)
 
         ref = await ref.add_files(image_file)

@@ -153,6 +153,8 @@ class GptiJobView(DroppyView):
     async def download_artifact(
         self, ctx: discord.Interaction, button: discord.ui.Button
     ):
+        await ctx.response.defer(ephemeral=True, thinking=True)
+
         zbuf = BytesIO()
         zip_base_name = ""
         with zipfile.ZipFile(zbuf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -164,7 +166,8 @@ class GptiJobView(DroppyView):
         zbuf.seek(0)
         zip_name = f"{zip_base_name}.zip"
         artifact = discord.File(zbuf, zip_name)
-        await ctx.response.send_message(file=artifact, ephemeral=True, silent=True)
+
+        await ctx.edit_original_response(attachments=[artifact])
 
     @discord.ui.button(
         label="Prompt",

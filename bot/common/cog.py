@@ -98,7 +98,8 @@ class DroppyCog(commands.Cog):
     @staticmethod
     def save_ctx_locale():
         locales_path = os.path.join(DroppyCog.cwd, "rules/locales.json")
-        fixed_json = {u: l.name for u, l in DroppyCog.ctx_locales.items()}
+        fixed_json = {u: str(l) for u, l in DroppyCog.ctx_locales.items()}
+        save_json(locales_path, fixed_json)
 
     @staticmethod
     def load_ctx_locale():
@@ -219,7 +220,7 @@ class DroppyCog(commands.Cog):
                 # first time response
                 if thinking_indicator and not force_silent:
                     embed = helper.as_embed(
-                        thinking_indicator, ref.author, footer_append=footer
+                        thinking_indicator, ctx.user, footer_append=footer
                     )
                     await ctx.response.send_message(
                         embed=embed, ephemeral=force_ephemeral, silent=True

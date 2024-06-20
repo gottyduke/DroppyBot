@@ -228,16 +228,14 @@ class DroppyAllocationManager(DroppyCog):
     @DroppyCog.failsafe_ref()
     async def allocget(self, ctx: commands.Context, *, details: Optional[str]):
         ref = await self.get_ctx_ref(ctx)
-        await ref.delete()
 
         if not details:
-            for action in self.usage.keys():
-                await ctx.reply(embed=await self.as_action_embed(action))
+            embeds = [await self.as_action_embed(a) for a in self.usage.keys()]
+            await ref.edit(embeds=embeds)
             return
 
         if details.isnumeric():
-            await ctx.reply(embed=await self.as_user_embed(int(details)))
+            await ref.edit(embed=await self.as_user_embed(int(details)))
             return
 
-        await ctx.reply(embeds=await self.as_action_embed(details))
-        return
+        await ref.edit(embed=await self.as_action_embed(details))

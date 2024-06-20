@@ -27,14 +27,6 @@ class GPTHandler(DroppyCog):
 
         self.help_info["GPT"] = generate_help_info
 
-    def as_embed(self, content: str, referrer: discord.User, footer: str = ""):
-        embed = helper.as_embed(content, referrer)
-
-        if self.on_maintenance:
-            embed.set_footer(text=footer)
-
-        return embed
-
     def load_user_init(self):
         user_init_path = os.path.join(self.cwd, self.config.gpt.user_init_path)
         return config.load_json(user_init_path)
@@ -250,7 +242,7 @@ class GPTHandler(DroppyCog):
         )
 
         # get perf latency
-        latency = f" ⏱️ {helper.latency_end(ref.id)}ms"
+        latency = f"⏱️ {helper.latency_end(ref.id)}ms"
 
         # content policy?
         if completion.choices[0].finish_reason == "content_filter":
@@ -260,7 +252,9 @@ class GPTHandler(DroppyCog):
         raw_content = completion.choices[0].message.content
         responses = helper.chunk_with_size(raw_content, 3800)
 
-        ref = await ref.edit(embed=self.as_embed(responses[0], ctx.author, latency))
+        ref = await ref.edit(
+            embed=helper.as_embed(responses[0], ctx.author, footer_append=latency)
+        )
         for i, res in enumerate(responses[1:]):
             ref = await ref.reply(
                 embed=self.as_embed(res, ctx.author, f"{i + 2} / {len(responses)}"),
@@ -361,7 +355,7 @@ class GPTHandler(DroppyCog):
         prompt_block = helper.codeblock(prompt)
         init_changed = self.translate("gptinit_changed", locale)
         embed = (
-            self.as_embed(init_changed, ctx.author)
+            helper.as_embed(init_changed, ctx.author)
             .add_field(name="From", value=str(original), inline=False)
             .add_field(name="To", value=prompt_block, inline=False)
         )

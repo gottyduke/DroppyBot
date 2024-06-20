@@ -61,7 +61,7 @@ class Logger:
                 break
             if level == self.LogLevel.ERROR:
                 log_entry += f"\n<@{os.environ['DEV_ID']}>"
-            for chunk in helper.chunk_with_size(log_entry, 3000):
+            for chunk in helper.chunk_with_size(log_entry, 1800):
                 await self.saved_channel.send(chunk, silent=True)
 
         self.session_start = None

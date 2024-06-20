@@ -2,16 +2,20 @@ import discord
 
 
 async def generate_help_info(ref: discord.Message):
+    color = discord.Color.from_rgb(236, 248, 248)
     help_info = [
         discord.Embed(
-            color=discord.Color.blurple(),
+            color=color,
             title="GPT",
             description="""
-        使用chatGPT进行文字生成, powered by OpenAI.
+        使用GPT进行文字生成, powered by OpenAI.
 
         可附加有上限的上下文, 模拟连续对话(参考使用方法).
 
-        已提供`gpt-4-turbo`或`gpt-4o`**(新!)**模型.
+        已提供`gpt-4-turbo`和`gpt-4o`**(新!)**模型.
+        
+        每月限制: 无
+
         """,
         )
         .add_field(
@@ -53,21 +57,7 @@ async def generate_help_info(ref: discord.Message):
             inline=False,
         ),
         discord.Embed(
-            color=discord.Color.blurple(),
-            title="如何选择不同的模型?",
-            description=f"""
-        本机器人🔧接入了OpenAI API, 自2023/3/27也获得了gpt-4模型API的内测资格, ~~因此提供gpt-3.5-turbo和gpt-4两种模型~~
-
-        ~~其中`gpt-3.5-turbo`是OpenAI默认chatGPT模型, 而`gpt-4`则是其之后的高级付费模型, 语言能力和逻辑思维得到了很大的加强~~
-
-        ~~两GPT模型的使用**没有**网页端的每小时条数限制. 但是, 作为一个计费制的API, 在整活类问题/逻辑需求不强的使用场景下请调用`gpt-3.5-turbo`模型, 正常使用时则调用`gpt-4`模型~~
-
-        现已移除`gpt-3.5-turbo`, 默认设置为`gpt-4-turbo`, 高级模型为`gpt-4o`.
-
-        """,
-        ),
-        discord.Embed(
-            color=discord.Color.blurple(),
+            color=color,
             title="命令指南及其示例:",
             description=f"""
         **触发方式: `!gpt` 聊天命令 或  `/gpt` discord命令.**
@@ -94,7 +84,7 @@ gptinit : 设定个人专属的GPT设定语句, 例如人格模拟/风格设定`
         """,
         ),
         discord.Embed(
-            color=discord.Color.blurple(),
+            color=color,
             title="附加上下文进行连续对话",
             description=f"""
         每次使用GPT命令时, 便开启了一个**新的对话**.
@@ -109,7 +99,7 @@ gptinit : 设定个人专属的GPT设定语句, 例如人格模拟/风格设定`
             url="https://cdn.discordapp.com/attachments/1084950188617117817/1252747524930928704/reply.png?ex=6673578c&is=6672060c&hm=9f42829d85c20d30a1f5ee24787671420e1095eb2b50ab5b7cd3b85c2d72d0dd&"
         ),
         discord.Embed(
-            color=discord.Color.blurple(),
+            color=color,
             title="关于GPT设定语句",
             description=f"""
         GPT设定语句是每次对话时各用户专属的前置设定, 又称为调教, 咒语, system prompt等.
@@ -122,7 +112,7 @@ gptinit 你将扮演一个猫娘, 称呼我为主人, 开头和结尾都要使�
         """,
         ),
         discord.Embed(
-            color=discord.Color.blurple(),
+            color=color,
             title="附加文件用于文字生成",
             description=f"""
         使用GPT命令时, 将文件拖拽至输入栏即可附加此文件用于下次文字生成.
@@ -137,7 +127,7 @@ gptinit 你将扮演一个猫娘, 称呼我为主人, 开头和结尾都要使�
             url="https://cdn.discordapp.com/attachments/1084950188617117817/1252751979415863396/1.png?ex=66735bb2&is=66720a32&hm=48264bcf2a58f6bc7f2ecf61637974a5b950c17fea7bd9f43354a961f9195c44&"
         ),
         discord.Embed(
-            color=discord.Color.blurple(),
+            color=color,
             title="附加图片进行图片识别/辅助生成",
             description=f"""
         使用GPT命令时, 将图片拖拽/复制至输入栏即可附加此图片用于下次图片识别/辅助生成.

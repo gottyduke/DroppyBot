@@ -8,7 +8,7 @@
     {
         "action": "gpti",
         "allocated_user": 1000,
-        "allocated_pool": 1000,
+        "allocated_pool": 2000,
         "reset_interval": 30
     }
 ]

@@ -105,7 +105,7 @@ async def category_autocomplete(ctx: commands.Context, buffer: str):
     ]
 
 
-@DroppyCog.bot.tree.command(description="help_desc")
+@DroppyCog.bot.hybrid_command(description="help_desc")
 @app.rename(category="help_category")
 @app.describe(category="help_category_desc")
 @app.autocomplete(category=category_autocomplete)
@@ -116,6 +116,7 @@ async def help(ctx: commands.Context, *, category: Optional[str] = None):
     locale = DroppyCog.get_ctx_locale(ctx)
 
     if category:
+        category = category.upper()
         if category in DroppyCog.help_info and DroppyCog.help_info[category]:
             await DroppyCog.help_info[category](ref)
             return
@@ -128,7 +129,7 @@ async def help(ctx: commands.Context, *, category: Optional[str] = None):
         .set_image(url=img)
     )
     for cate in DroppyCog.help_info:
-        categories.description += f"- `{DroppyCog.bot.command_prefix}help {cate}`\n"
+        categories.description += f"- `help {cate}`\n"
 
     src = "https://github.com/gottyduke"
     footer = DroppyCog.translate("help_footer", locale)
@@ -160,7 +161,7 @@ async def on_ready():
 
     # init
     init_tasks = [
-        # update_presence(),
+        update_presence(),
     ]
     init_tasks = list(map(asyncio.create_task, init_tasks))
     await asyncio.gather(*init_tasks)

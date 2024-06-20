@@ -1,5 +1,6 @@
 import discord
 import os
+import random
 
 from .config import load_json
 from discord.app_commands import Translator, locale_str, TranslationContext
@@ -46,7 +47,13 @@ class DroppyTranslator(Translator):
     ):
         if locale.name not in [l.name for l in self.loaded_str.keys()]:
             return None
-        return self.loaded_str[locale].get(string, None)
+
+        translated = self.loaded_str[locale].get(string, None)
+        if isinstance(translated, str):
+            return translated
+        if isinstance(translated, list):
+            return random.choice(translated)
+        return translated
 
     async def translate(
         self, string: locale_str, locale: discord.Locale, context: TranslationContext
